@@ -546,6 +546,120 @@ class Repository {
     const info = this.db.prepare('DELETE FROM status_pins WHERE created_at < ?').run(cutoff);
     return info.changes;
   }
+
+  // --- Meetups & RSVPs ---
+  createMeetup({ groupId, creatorUserId, title, destinationLat, destinationLng, destinationLabel, startTime, stopOnArrival = 0 }) {
+    const id = 'meet_' + crypto.randomBytes(8).toString('hex');
+    const now = Date.now();
+    const safeStopOnArrival = stopOnArrival ? 1 : 0;
+
+    this.db.prepare(`
+      INSERT INTO meetups (id, group_id, creator_user_id, title, destination_lat, destination_lng, destination_label, start_time, status, stop_on_arrival, created_at, ended_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'planned', ?, ?, NULL)
+    `).run(id, groupId, creatorUserId, title, destinationLat, destinationLng, destinationLabel, startTime, safeStopOnArrival, now);
+
+    // Default creator RSVP to 'going'
+    const rsvpId = 'rsvp_' + crypto.randomBytes(8).toString('hex');
+    this.db.prepare(`
+      INSERT INTO meetup_rsvps (id, meetup_id, user_id, rsvp, lateness_minutes, arrived_at, updated_at)
+      VALUES (?, ?, ?, 'going', 0, NULL, ?)
+    `).run(rsvpId, id, creatorUserId, now);
+
+    return this.getMeetupById(id);
+  }
+
+  getMeetupById(id) {
+    const row = this.db.prepare('SELECT * FROM meetups WHERE id = ?').get(id);
+    if (!row) return null;
+    return {
+      ...row,
+      destination: {
+        lat: row.destination_lat,
+        lng: row.destination_lng,
+        label: row.destination_label
+      }
+    };
+  }
+
+  getMeetupsByGroup(groupId) {
+    const rows = this.db.prepare('SELECT * FROM meetups WHERE group_id = ? ORDER BY start_time ASC').all(groupId);
+    return rows.map((row) => ({
+      ...row,
+      destination: {
+        lat: row.destination_lat,
+        lng: row.destination_lng,
+        label: row.destination_label
+      }
+    }));
+  }
+
+  updateMeetupStatus(id, status) {
+    const now = Date.now();
+    const endedAt = status === 'ended' ? now : null;
+    this.db.prepare(`
+      UPDATE meetups SET status = ?, ended_at = CASE WHEN ? = 'ended' THEN ? ELSE ended_at END WHERE id = ?
+    `).run(status, status, endedAt, id);
+    return this.getMeetupById(id);
+  }
+
+  setMeetupRsvp({ meetupId, userId, rsvp = 'going', latenessMinutes = 0 }) {
+    const id = 'rsvp_' + crypto.randomBytes(8).toString('hex');
+    const now = Date.now();
+    const safeRsvp = ['going', 'maybe', 'no'].includes(rsvp) ? rsvp : 'going';
+    const safeLate = parseInt(latenessMinutes, 10) || 0;
+
+    this.db.prepare(`
+      INSERT INTO meetup_rsvps (id, meetup_id, user_id, rsvp, lateness_minutes, arrived_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, NULL, ?)
+      ON CONFLICT(meetup_id, user_id) DO UPDATE SET
+        rsvp = excluded.rsvp,
+        lateness_minutes = excluded.lateness_minutes,
+        updated_at = excluded.updated_at
+    `).run(id, meetupId, userId, safeRsvp, safeLate, now);
+
+    return this.getMeetupRsvp(meetupId, userId);
+  }
+
+  getMeetupRsvp(meetupId, userId) {
+    return this.db.prepare(`
+      SELECT r.*, u.display_name AS user_name, u.email
+      FROM meetup_rsvps r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.meetup_id = ? AND r.user_id = ?
+    `).get(meetupId, userId);
+  }
+
+  getMeetupRsvps(meetupId) {
+    return this.db.prepare(`
+      SELECT r.*, u.display_name AS user_name, u.email
+      FROM meetup_rsvps r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.meetup_id = ?
+      ORDER BY r.updated_at ASC
+    `).all(meetupId);
+  }
+
+  markMeetupArrived(meetupId, userId, arrivedAt = Date.now()) {
+    this.db.prepare(`
+      UPDATE meetup_rsvps SET arrived_at = ?, updated_at = ? WHERE meetup_id = ? AND user_id = ?
+    `).run(arrivedAt, arrivedAt, meetupId, userId);
+    return this.getMeetupRsvp(meetupId, userId);
+  }
+
+  autoEndExpiredMeetups(now = Date.now()) {
+    // Auto-end 2 hours after start_time: start_time + 2 * 60 * 60 * 1000 <= now
+    const cutoff = now - (2 * 60 * 60 * 1000);
+    const expired = this.db.prepare(`
+      SELECT id, group_id, title FROM meetups WHERE status != 'ended' AND start_time <= ?
+    `).all(cutoff);
+
+    if (expired.length > 0) {
+      this.db.prepare(`
+        UPDATE meetups SET status = 'ended', ended_at = ? WHERE status != 'ended' AND start_time <= ?
+      `).run(now, cutoff);
+    }
+    return expired;
+  }
 }
 
 const defaultRepo = new Repository();

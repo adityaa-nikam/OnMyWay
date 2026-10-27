@@ -38,6 +38,9 @@
           <button id="group-invite-btn" class="icon-btn" title="Create Invite Link" onclick="openInviteModal()">
             🔗 <span class="btn-text">Invite</span>
           </button>
+          <button id="group-meetups-btn" class="icon-btn" title="Group Meetups & ETAs" onclick="openMeetupsModal()">
+            🎯 <span class="btn-text">Meetups</span>
+          </button>
         </div>
       <% } else { %>
         <div class="room-pill">
@@ -376,6 +379,57 @@
 
       <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
         <button type="button" onclick="closeShareLogModal()" class="action-sm" style="padding: 8px 16px;">Close</button>
+      </div>
+  <!-- Group Meetups Modal -->
+  <div id="meetups-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-icon">🎯</span>
+        <h2>Group Meetups & ETAs</h2>
+        <p class="modal-subtitle">Track who is on the way, who arrived, and who is late</p>
+      </div>
+
+      <!-- Existing Meetups List -->
+      <div id="group-meetups-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 16px;">
+        <span class="text-xs text-slate-400">Loading meetups...</span>
+      </div>
+
+      <!-- Create New Meetup Form -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+        <h3 style="font-size: 0.88rem; font-weight: 700; color: #f8fafc; margin-bottom: 10px;">Create New Meetup</h3>
+        <div class="form-group">
+          <label for="meetup-title-input">Meetup Title</label>
+          <input id="meetup-title-input" type="text" placeholder="e.g. Dinner, Trekking Trip, Team Coffee" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label for="meetup-dest-label">Destination Name / Address</label>
+          <input id="meetup-dest-label" type="text" placeholder="e.g. Central Station, Blue Tokai Cafe" class="form-input" />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div class="form-group">
+            <label for="meetup-lat-input">Latitude</label>
+            <input id="meetup-lat-input" type="number" step="any" placeholder="18.5204" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label for="meetup-lng-input">Longitude</label>
+            <input id="meetup-lng-input" type="number" step="any" placeholder="73.8567" class="form-input" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="meetup-start-input">Start Date & Time</label>
+          <input id="meetup-start-input" type="datetime-local" class="form-input" />
+        </div>
+        <div style="margin-top: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #cbd5e1; cursor: pointer;">
+            <input id="meetup-stop-on-arrival" type="checkbox" checked />
+            <span>Auto-stop sharing when I arrive</span>
+          </label>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
+        <button type="button" onclick="closeMeetupsModal()" class="action-sm" style="padding: 8px 16px;">Close</button>
+        <button type="button" id="btn-create-meetup-submit" onclick="submitCreateMeetup()" class="btn-primary-large" style="width: auto; padding: 8px 20px; font-size: 0.85rem;">Create Meetup</button>
       </div>
     </div>
   </div>

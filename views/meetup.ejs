@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title><%= meetup.title %> — OnMyWay (OMW) Meetup</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/CSS/room.css?v=<%= Date.now() %>" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="/socket.io/socket.io.js"></script>
+  <style>
+    /* Dedicated Meetup Workspace Styles */
+    .meetup-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      height: calc(100vh - 64px);
+      overflow: hidden;
+      background: #0f172a;
+    }
+    @media (max-width: 900px) {
+      .meetup-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: 55vh 1fr;
+        height: calc(100vh - 64px);
+      }
+    }
+    .meetup-map-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    #meetup-map {
+      width: 100%;
+      height: 100%;
+      background: #0b1120;
+    }
+    .meetup-sidebar {
+      background: #1e293b;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 16px;
+      gap: 16px;
+    }
+    .meetup-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      backdrop-filter: blur(8px);
+    }
+    .meetup-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .meetup-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 0;
+    }
+    .meetup-time-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-top: 8px;
+    }
+    .dest-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      margin-top: 8px;
+    }
+    .dest-icon {
+      color: #f59e0b;
+      font-size: 1rem;
+    }
+    /* RSVP Buttons */
+    .rsvp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .btn-rsvp {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      padding: 8px 6px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .btn-rsvp:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #f8fafc;
+    }
+    .btn-rsvp.active-going {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #34d399;
+    }
+    .btn-rsvp.active-maybe {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: #f59e0b;
+      color: #fbbf24;
+    }
+    .btn-rsvp.active-no {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+    /* One-tap Late Button */
+    .btn-late-action {
+      width: 100%;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3));
+      border: 1px solid #f59e0b;
+      color: #fbbf24;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+      transition: all 0.2s ease;
+    }
+    .btn-late-action:hover {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.4));
+      transform: translateY(-1px);
+    }
+    .btn-late-action:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    /* Participants List */
+    .participant-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .participant-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .participant-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+    .participant-meta {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    .eta-pill {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .eta-badge {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .eta-badge.badge-arrived {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border-color: #10b981;
+    }
+    .eta-badge.badge-late {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border-color: #ef4444;
+    }
+    .approx-tag {
+      font-size: 0.65rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .ics-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .ics-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body class="theme-dark">
+  <!-- Top Navigation -->
+  <header class="app-header">
+    <div class="header-left">
+      <a href="/room?groupId=<%= group.id %>" class="brand-link" title="Back to Group">
+        <span class="brand-icon">←</span>
+        <span class="brand-title"><%= group.name %></span>
+      </a>
+      <div class="room-pill">
+        <span class="room-label">MEETUP:</span>
+        <span class="room-id font-mono"><%= meetup.title %></span>
+      </div>
+    </div>
+    <div class="header-right">
+      <a href="/api/meetups/<%= meetup.id %>/ics" class="ics-btn" title="Export .ics calendar file">
+        📅 Add to Calendar (.ics)
+      </a>
+      <span id="meetup-status-badge" class="badge <%= meetup.status === 'ended' ? 'badge-offline' : 'badge-online' %>">
+        <%= meetup.status.toUpperCase() %>
+      </span>
+    </div>
+  </header>
+
+  <!-- Meetup Workspace Layout -->
+  <main class="meetup-layout">
+    <!-- Map View -->
+    <div class="meetup-map-container">
+      <div id="meetup-map"></div>
+    </div>
+
+    <!-- Sidebar Panel -->
+    <aside class="meetup-sidebar">
+      <!-- Meetup Header Info Card -->
+      <div class="meetup-card">
+        <div class="meetup-title-row">
+          <h2 class="meetup-title"><%= meetup.title %></h2>
+        </div>
+        <div class="meetup-time-badge">
+          ⏰ <span id="meetup-start-formatted">Loading start time...</span>
+        </div>
+        <div class="dest-row">
+          <span class="dest-icon">📍</span>
+          <span id="dest-label-text"><%= meetup.destination.label %></span>
+        </div>
+        <% if (meetup.stop_on_arrival) { %>
+          <div style="font-size: 0.72rem; color: #10b981; margin-top: 8px; display: flex; align-items: center; gap: 4px;">
+            <span>🛡️ Auto-stop location sharing when arrived</span>
+          </div>
+        <% } %>
+
+        <!-- RSVP Controls -->
+        <div style="margin-top: 14px;">
+          <label style="font-size: 0.72rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Your RSVP</label>
+          <div class="rsvp-grid">
+            <button id="rsvp-going" class="btn-rsvp" onclick="updateRsvp('going')">✓ Going</button>
+            <button id="rsvp-maybe" class="btn-rsvp" onclick="updateRsvp('maybe')">? Maybe</button>
+            <button id="rsvp-no" class="btn-rsvp" onclick="updateRsvp('no')">✕ Can't go</button>
+          </div>
+        </div>
+
+        <!-- One-Tap Late Action -->
+        <button id="btn-running-late" class="btn-late-action" onclick="sendRunningLate()">
+          ⏱️ Running late by 10 min
+        </button>
+      </div>
+
+      <!-- Attendees & Live ETAs Card -->
+      <div class="meetup-card" style="flex: 1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: #f8fafc; margin: 0;">Who's Late? & ETAs</h3>
+          <span id="attendee-count-badge" class="badge">0</span>
+        </div>
+
+        <div id="participants-list-container">
+          <span style="font-size: 0.8rem; color: #94a3b8;">Loading attendee ETAs...</span>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const MEETUP_DATA = {
+      id: "<%= meetup.id %>",
+      groupId: "<%= meetup.group_id %>",
+      title: "<%= meetup.title.replace(/"/g, '\\"') %>",
+      destLat: <%= meetup.destination.lat %>,
+      destLng: <%= meetup.destination.lng %>,
+      destLabel: "<%= meetup.destination.label.replace(/"/g, '\\"') %>",
+      startTime: <%= meetup.start_time %>,
+      status: "<%= meetup.status %>",
+      stopOnArrival: <%= meetup.stop_on_arrival ? 'true' : 'false' %>,
+      currentUserId: "<%= user.id %>",
+      currentUserName: "<%= user.displayName.replace(/"/g, '\\"') %>"
+    };
+
+    let map = null;
+    let socket = null;
+    let destMarker = null;
+    let destCircle = null;
+    let attendeeMarkers = new Map(); // userId -> Leaflet Marker
+    let attendeePolylines = new Map(); // userId -> Leaflet Polyline
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Format start time
+      const date = new Date(MEETUP_DATA.startTime);
+      const timeStr = date.toLocaleString([], {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      document.getElementById('meetup-start-formatted').textContent = timeStr;
+
+      // 2. Initialize Map
+      initMap();
+
+      // 3. Connect Socket.IO
+      initSocket();
+
+      // 4. Initial Load
+      fetchMeetupDetails();
+    });
+
+    function initMap() {
+      map = L.map('meetup-map', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([MEETUP_DATA.destLat, MEETUP_DATA.destLng], 14);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      // Destination Gold Marker
+      const destIcon = L.divIcon({
+        className: 'custom-dest-pin',
+        html: `<div style="background: #f59e0b; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5); border: 2px solid #ffffff;"><span style="transform: rotate(45deg); font-size: 14px;">🎯</span></div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+      });
+
+      destMarker = L.marker([MEETUP_DATA.destLat, MEETUP_DATA.destLng], { icon: destIcon }).addTo(map);
+      destMarker.bindPopup(`<b>${MEETUP_DATA.title}</b><br>${MEETUP_DATA.destLabel}`).openPopup();
+
+      // 100m Arrival Geofence Circle
+      destCircle = L.circle([MEETUP_DATA.destLat, MEETUP_DATA.destLng], {
+        radius: 100,
+        color: '#f59e0b',
+        fillColor: '#f59e0b',
+        fillOpacity: 0.15,
+        weight: 1.5,
+        dashArray: '4, 6'
+      }).addTo(map);
+    }
+
+    function initSocket() {
+      socket = io('/', { transports: ['websocket', 'polling'] });
+
+      socket.on('connect', () => {
+        socket.emit('join-room', {
+          roomId: MEETUP_DATA.groupId,
+          isPersistent: true
+        });
+      });
+
+      socket.on('meetup:eta-update', (data) => {
+        if (data.meetupId === MEETUP_DATA.id) {
+          fetchMeetupDetails();
+        }
+      });
+
+      socket.on('meetup:rsvp-updated', (data) => {
+        if (data.meetupId === MEETUP_DATA.id) {
+          fetchMeetupDetails();
+        }
+      });
+
+      socket.on('meetup:arrived', (data) => {
+        if (data.meetupId === MEETUP_DATA.id) {
+          fetchMeetupDetails();
+        }
+      });
+
+      socket.on('meetup:ended', (data) => {
+        if (data.meetupId === MEETUP_DATA.id) {
+          const badge = document.getElementById('meetup-status-badge');
+          badge.className = 'badge badge-offline';
+          badge.textContent = 'ENDED';
+        }
+      });
+    }
+
+    async function fetchMeetupDetails() {
+      try {
+        const res = await fetch(`/api/meetups/${MEETUP_DATA.id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success) {
+          renderRsvpState(data.userRsvp);
+          renderParticipants(data.participants);
+          updateMapAttendees(data.participants);
+        }
+      } catch (err) {
+        console.error('Failed to fetch meetup details:', err);
+      }
+    }
+
+    function renderRsvpState(rsvp) {
+      document.getElementById('rsvp-going').classList.remove('active-going');
+      document.getElementById('rsvp-maybe').classList.remove('active-maybe');
+      document.getElementById('rsvp-no').classList.remove('active-no');
+
+      if (!rsvp) return;
+      if (rsvp.rsvp === 'going') document.getElementById('rsvp-going').classList.add('active-going');
+      if (rsvp.rsvp === 'maybe') document.getElementById('rsvp-maybe').classList.add('active-maybe');
+      if (rsvp.rsvp === 'no') document.getElementById('rsvp-no').classList.add('active-no');
+    }
+
+    function renderParticipants(participants) {
+      const container = document.getElementById('participants-list-container');
+      container.innerHTML = '';
+
+      document.getElementById('attendee-count-badge').textContent = participants.length;
+
+      if (!participants || participants.length === 0) {
+        container.innerHTML = '<span style="font-size: 0.8rem; color: #94a3b8;">No attendees yet.</span>';
+        return;
+      }
+
+      participants.forEach((p) => {
+        const card = document.createElement('div');
+        card.className = 'participant-card';
+
+        const info = document.createElement('div');
+        info.className = 'participant-info';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'participant-name';
+        nameSpan.textContent = p.userName + (p.userId === MEETUP_DATA.currentUserId ? ' (You)' : '');
+        info.appendChild(nameSpan);
+
+        const metaSpan = document.createElement('span');
+        metaSpan.className = 'participant-meta';
+        if (p.distanceMeters != null) {
+          metaSpan.textContent = `${(p.distanceMeters / 1000).toFixed(1)} km away • RSVP: ${p.rsvp}`;
+        } else {
+          metaSpan.textContent = `RSVP: ${p.rsvp} • Location not shared`;
+        }
+        info.appendChild(metaSpan);
+        card.appendChild(info);
+
+        const etaPill = document.createElement('div');
+        etaPill.className = 'eta-pill';
+
+        const badge = document.createElement('span');
+        if (p.isArrived) {
+          badge.className = 'eta-badge badge-arrived';
+          badge.textContent = 'ARRIVED';
+        } else if (p.isLate) {
+          badge.className = 'eta-badge badge-late';
+          badge.textContent = `LATE +${p.lateByMinutes}m`;
+        } else if (p.etaSeconds != null) {
+          badge.className = 'eta-badge';
+          const mins = Math.max(1, Math.round(p.etaSeconds / 60));
+          badge.textContent = `${mins} min`;
+        } else {
+          badge.className = 'eta-badge';
+          badge.style.background = 'rgba(255,255,255,0.05)';
+          badge.style.color = '#94a3b8';
+          badge.style.borderColor = 'rgba(255,255,255,0.1)';
+          badge.textContent = 'NO GPS';
+        }
+        etaPill.appendChild(badge);
+
+        if (p.isApproximate && !p.isArrived && p.etaSeconds != null) {
+          const approx = document.createElement('span');
+          approx.className = 'approx-tag';
+          approx.textContent = 'Approx';
+          etaPill.appendChild(approx);
+        }
+
+        card.appendChild(etaPill);
+        container.appendChild(card);
+      });
+    }
+
+    function updateMapAttendees(participants) {
+      if (!map) return;
+
+      const bounds = L.latLngBounds([[MEETUP_DATA.destLat, MEETUP_DATA.destLng]]);
+
+      participants.forEach((p) => {
+        if (p.polyline && p.polyline.length > 0) {
+          const startPt = p.polyline[0];
+          bounds.extend(startPt);
+
+          // Update marker
+          let marker = attendeeMarkers.get(p.userId);
+          const iconHtml = `<div style="background: #38bdf8; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0b1120; font-weight: bold; font-size: 11px; border: 2px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">${p.userName.slice(0, 2).toUpperCase()}</div>`;
+          const customIcon = L.divIcon({ className: 'attendee-pin', html: iconHtml, iconSize: [28, 28] });
+
+          if (!marker) {
+            marker = L.marker(startPt, { icon: customIcon }).addTo(map);
+            attendeeMarkers.set(p.userId, marker);
+          } else {
+            marker.setLatLng(startPt);
+          }
+
+          const etaText = p.isArrived ? 'Arrived' : (p.etaSeconds ? `${Math.round(p.etaSeconds / 60)} min` : 'Active');
+          marker.bindPopup(`<b>${p.userName}</b><br>ETA: ${etaText}`);
+
+          // Update polyline
+          let poly = attendeePolylines.get(p.userId);
+          if (!poly) {
+            poly = L.polyline(p.polyline, {
+              color: p.isLate ? '#ef4444' : '#38bdf8',
+              weight: 3.5,
+              opacity: 0.8,
+              dashArray: p.isApproximate ? '6, 8' : null
+            }).addTo(map);
+            attendeePolylines.set(p.userId, poly);
+          } else {
+            poly.setLatLngs(p.polyline);
+            poly.setStyle({
+              color: p.isLate ? '#ef4444' : '#38bdf8',
+              dashArray: p.isApproximate ? '6, 8' : null
+            });
+          }
+        }
+      });
+
+      if (bounds.isValid() && participants.some((p) => p.polyline)) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      }
+    }
+
+    async function updateRsvp(rsvpStatus) {
+      try {
+        const res = await fetch(`/api/meetups/${MEETUP_DATA.id}/rsvp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rsvp: rsvpStatus })
+        });
+        if (res.ok) {
+          fetchMeetupDetails();
+        }
+      } catch (err) {
+        console.error('Error updating RSVP:', err);
+      }
+    }
+
+    async function sendRunningLate() {
+      const btn = document.getElementById('btn-running-late');
+      btn.disabled = true;
+      btn.textContent = 'Sending notice...';
+
+      try {
+        const res = await fetch(`/api/meetups/${MEETUP_DATA.id}/late`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (res.ok) {
+          btn.textContent = '✓ Sent! Running late by 10 min';
+          fetchMeetupDetails();
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.textContent = '⏱️ Running late by 10 min';
+          }, 5000);
+        } else {
+          btn.disabled = false;
+          btn.textContent = '⏱️ Running late by 10 min';
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = '⏱️ Running late by 10 min';
+      }
+    }
+  </script>
+</body>
+</html>

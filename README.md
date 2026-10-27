@@ -139,3 +139,44 @@ Follow these steps to test all Milestone 1 features interactively in a browser:
 4. Confirm the browser prompt.
 5. Verify you are logged out and redirected to `/`.
 6. Inspect the database: verify that your user row, active sessions, group memberships, and authored messages have been completely deleted via foreign key cascades.
+
+---
+
+## 🎯 Meetup Mode & Routing Provider Abstraction
+
+OnMyWay provides a dedicated **Meetup Mode** to answer *"Where is everyone and who's late?"* without invasive background tracking.
+
+### 1. Privacy-First Routing Provider Abstraction
+To safeguard user privacy, **OnMyWay does NOT default to public routing servers**:
+- **Straight-Line Fallback (Default):** Computes distance via the Haversine formula divided by average speed (~40 km/h) and flags the ETA with `isApproximate: true`. Coordinates remain 100% on your server.
+- **OSRM Integration (`OSRM_BASE_URL`):** If an OSRM instance is configured via `OSRM_BASE_URL`, OnMyWay fetches precise turn-by-turn routes with a strict 2.5s timeout.
+  > ⚠️ **Warning:** The public OSRM demo server (`router.project-osrm.org`) is **not** for production use and transmits users' coordinates to a third party.
+
+### 2. Self-Hosting OSRM with Docker
+To enable precise turn-by-turn routing while retaining complete coordinate sovereignty, self-host OSRM using the official Docker image:
+
+```bash
+# 1. Download OpenStreetMap data for your region
+wget http://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf
+
+# 2. Extract and build routing graph
+docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-extract -p /opt/car.lua /data/berlin-latest.osm.pbf
+docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-partition /data/berlin-latest.osrm
+docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-customize /data/berlin-latest.osrm
+
+# 3. Launch OSRM routing daemon on port 5000
+docker run -t -i -p 5000:5000 -v "${PWD}:/data" osrm/osrm-backend osrm-routed --algorithm mld /data/berlin-latest.osrm
+
+# 4. Point OnMyWay to your self-hosted instance in .env
+OSRM_BASE_URL=http://localhost:5000
+```
+
+### 3. Server-Side ETA Caching & Invalidation
+- **45-Second Cache:** ETAs are computed exclusively on the server and cached per user per meetup for 45 seconds.
+- **100m Movement Invalidation:** If a user moves more than 100 meters, their cache entry is invalidated and recomputed immediately.
+- **Provider Timeout Fallback:** If OSRM fails or times out (> 2500ms), the system falls back seamlessly to the straight-line estimation with `isApproximate: true`.
+- **Non-Participant Isolation:** Users with RSVP `no` or non-members generate and receive zero ETAs.
+- **Auto-End Sweep:** Meetups automatically transition to `ended` 2 hours after their start time.
+- **One-Tap Lateness:** Group members can tap *"Running late by 10 min"* to update their RSVP and automatically broadcast a system alert into group chat.
+- **Calendar Export (.ics):** Standard iCalendar file download at `/api/meetups/:id/ics` with geocoded coordinates.
+

@@ -4,10 +4,11 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "node test-rooms-security.js && node test-milestone1.js && node test-timeboxed-safety.js",
+    "test": "node test-rooms-security.js && node test-milestone1.js && node test-timeboxed-safety.js && node test-meetups.js",
     "test:security": "node test-rooms-security.js",
     "test:milestone1": "node test-milestone1.js",
-    "test:safety": "node test-timeboxed-safety.js"
+    "test:safety": "node test-timeboxed-safety.js",
+    "test:meetups": "node test-meetups.js"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

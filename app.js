@@ -10,7 +10,9 @@ const { sessionMiddleware, socketAuthMiddleware, verifyCsrf } = require('./middl
 const authRouter = require('./routes/auth');
 const groupsRouter = require('./routes/groups');
 const locationRouter = require('./routes/location');
+const meetupsRouter = require('./routes/meetups');
 const { locationSharingService } = require('./services/locationSharing');
+const { routingService } = require('./services/routingService');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,8 +25,13 @@ const roomManager = new RoomManager();
 const chatRateLimiter = new RateLimiter(5, 2000); // Max 5 chat messages per 2s per socket
 const locationRateLimiter = new RateLimiter(4, 1000); // Max 4 location updates per 1s per socket
 
-// Initialize time-boxed location sharing engine
+// App context for routers
+app.set('io', io);
+app.set('roomManager', roomManager);
+
+// Initialize engines
 locationSharingService.init(io, roomManager);
+routingService.init(io);
 
 // Express setup
 app.use(express.json());
@@ -36,10 +43,11 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Mount Auth, Groups, and Location routers
+// Mount Auth, Groups, Location, and Meetups routers
 app.use(authRouter);
 app.use(groupsRouter);
 app.use(locationRouter);
+app.use(meetupsRouter);
 
 // ---------- HTTP ROUTES ----------
 
@@ -663,6 +671,26 @@ io.on('connection', (socket) => {
       for (const gid of targetGroupIds) {
         socket.to(gid).emit('receive-location', locData);
         io.to(gid).emit('participants-updated', roomManager.getParticipantList(gid));
+
+        // Compute and broadcast meetup ETAs for active meetups in this target group
+        try {
+          const meetups = repo.getMeetupsByGroup(gid);
+          for (const meetup of meetups) {
+            if (meetup.status !== 'ended') {
+              routingService.computeUserEta(meetup.id, socket.data.userId, latitude, longitude)
+                .then((etaData) => {
+                  if (etaData) {
+                    io.to(gid).emit('meetup:eta-update', etaData);
+                  }
+                })
+                .catch((err) => {
+                  console.error('[Routing] Error computing meetup ETA:', err);
+                });
+            }
+          }
+        } catch (err) {
+          console.error('[Routing] Error reading meetups for group:', err);
+        }
       }
     } else {
       socket.to(roomId).emit('receive-location', locData);
@@ -904,4 +932,4 @@ if (require.main === module) {
   server.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
 }
 
-module.exports = { app, server, roomManager, chatRateLimiter, locationRateLimiter, repo, locationSharingService };
+module.exports = { app, server, io, roomManager, chatRateLimiter, locationRateLimiter, repo, locationSharingService, routingService };

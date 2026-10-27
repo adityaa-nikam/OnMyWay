@@ -1516,6 +1516,154 @@ function leaveRoom() {
 }
 window.leaveRoom = leaveRoom;
 
+// --------------------------------------------------------------------------
+// Group Meetups & ETAs Modal
+// --------------------------------------------------------------------------
+function openMeetupsModal() {
+  const modal = document.getElementById("meetups-modal");
+  if (!modal) return;
+  modal.classList.remove("hidden");
+
+  // Pre-fill default coordinates from current position or map center
+  const latInput = document.getElementById("meetup-lat-input");
+  const lngInput = document.getElementById("meetup-lng-input");
+  if (latInput && lngInput) {
+    if (lastKnownLat !== null && lastKnownLng !== null) {
+      latInput.value = lastKnownLat.toFixed(5);
+      lngInput.value = lastKnownLng.toFixed(5);
+    } else if (map) {
+      const center = map.getCenter();
+      latInput.value = center.lat.toFixed(5);
+      lngInput.value = center.lng.toFixed(5);
+    }
+  }
+
+  // Pre-fill default start time (1 hour from now)
+  const startInput = document.getElementById("meetup-start-input");
+  if (startInput) {
+    const future = new Date(Date.now() + 60 * 60 * 1000);
+    startInput.value = future.toISOString().slice(0, 16);
+  }
+
+  loadGroupMeetups();
+}
+window.openMeetupsModal = openMeetupsModal;
+
+function closeMeetupsModal() {
+  const modal = document.getElementById("meetups-modal");
+  if (modal) modal.classList.add("hidden");
+}
+window.closeMeetupsModal = closeMeetupsModal;
+
+async function loadGroupMeetups() {
+  const container = document.getElementById("group-meetups-list");
+  if (!container || !window.__OMW_CONFIG__ || !window.__OMW_CONFIG__.groupId) return;
+
+  try {
+    const res = await fetch(`/api/groups/${window.__OMW_CONFIG__.groupId}/meetups`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    container.innerHTML = "";
+    if (!data.meetups || data.meetups.length === 0) {
+      container.innerHTML = '<span style="font-size: 0.8rem; color: #94a3b8;">No active meetups for this group yet.</span>';
+      return;
+    }
+
+    data.meetups.forEach((m) => {
+      const row = document.createElement("div");
+      row.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.25); border-radius: 8px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.06);";
+
+      const left = document.createElement("div");
+      left.style.cssText = "display: flex; flex-direction: column; gap: 2px;";
+
+      const title = document.createElement("a");
+      title.href = `/meetups/${m.id}`;
+      title.style.cssText = "font-size: 0.9rem; font-weight: bold; color: #38bdf8; text-decoration: none;";
+      title.textContent = m.title;
+
+      const meta = document.createElement("span");
+      meta.style.cssText = "font-size: 0.75rem; color: #94a3b8;";
+      const d = new Date(m.start_time);
+      meta.textContent = `📍 ${m.destination.label} • ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+      left.appendChild(title);
+      left.appendChild(meta);
+      row.appendChild(left);
+
+      const right = document.createElement("a");
+      right.href = `/meetups/${m.id}`;
+      right.className = "action-sm";
+      right.style.cssText = "padding: 6px 12px; font-size: 0.75rem; background: #38bdf8; color: #0b1120; font-weight: bold; text-decoration: none; border-radius: 6px;";
+      right.textContent = "Open →";
+      row.appendChild(right);
+
+      container.appendChild(row);
+    });
+  } catch (err) {
+    console.error("Error loading group meetups:", err);
+  }
+}
+
+async function submitCreateMeetup() {
+  const titleInput = document.getElementById("meetup-title-input");
+  const destLabelInput = document.getElementById("meetup-dest-label");
+  const latInput = document.getElementById("meetup-lat-input");
+  const lngInput = document.getElementById("meetup-lng-input");
+  const startInput = document.getElementById("meetup-start-input");
+  const stopOnArrival = document.getElementById("meetup-stop-on-arrival");
+  const submitBtn = document.getElementById("btn-create-meetup-submit");
+
+  const title = titleInput.value.trim();
+  const label = destLabelInput.value.trim() || "Destination";
+  const lat = parseFloat(latInput.value);
+  const lng = parseFloat(lngInput.value);
+  const startTime = new Date(startInput.value).getTime();
+
+  if (!title) {
+    alert("Please enter a meetup title.");
+    return;
+  }
+  if (isNaN(lat) || isNaN(lng)) {
+    alert("Please provide valid coordinates.");
+    return;
+  }
+  if (isNaN(startTime) || startTime <= Date.now()) {
+    alert("Please select a future start time.");
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Creating...";
+
+  try {
+    const res = await fetch(`/api/groups/${window.__OMW_CONFIG__.groupId}/meetups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        destination: { lat, lng, label },
+        startTime,
+        stopOnArrival: stopOnArrival ? stopOnArrival.checked : false
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      window.location.href = `/meetups/${data.meetup.id}`;
+    } else {
+      alert("Error creating meetup: " + (data.error || "Unknown error"));
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Create Meetup";
+    }
+  } catch (err) {
+    alert("Network error creating meetup.");
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Create Meetup";
+  }
+}
+window.submitCreateMeetup = submitCreateMeetup;
+
 window.addEventListener("beforeunload", () => {
   if (watchId !== null) {
     navigator.geolocation.clearWatch(watchId);
