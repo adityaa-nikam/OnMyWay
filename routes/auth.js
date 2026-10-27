@@ -21,7 +21,9 @@ router.get('/login', (req, res) => {
   res.render('login', {
     returnUrl: req.query.returnUrl || '',
     error: req.query.error || null,
-    sent: req.query.sent === 'true'
+    sent: req.query.sent === 'true',
+    email: req.query.email || '',
+    devLink: req.query.devLink || null
   });
 });
 
@@ -57,7 +59,9 @@ router.post('/auth/magic-link', async (req, res) => {
   }
 
   if (req.accepts('html') && !req.xhr) {
-    return res.redirect(`/login?sent=true&email=${encodeURIComponent(cleanEmail)}`);
+    const isDev = !process.env.SMTP_HOST;
+    const devParam = isDev ? `&devLink=${encodeURIComponent(verifyUrl)}` : '';
+    return res.redirect(`/login?sent=true&email=${encodeURIComponent(cleanEmail)}${devParam}`);
   }
 
   res.json({ success: true, message: 'Magic link sent successfully. Please check your inbox.' });

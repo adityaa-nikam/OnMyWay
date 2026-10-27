@@ -23,9 +23,24 @@
         <p class="text-xs text-slate-400 mt-1">
           Check your email for your one-click sign-in link. The link expires in 15 minutes.
         </p>
-        <p class="text-[11px] text-slate-500 mt-3">
-          (If running locally, check your terminal output for the dev link)
-        </p>
+
+        <% if (devLink) { %>
+          <div class="mt-4 pt-3 border-t border-emerald-800/40 text-left">
+            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-sky-500/20 text-sky-300 border border-sky-500/30 mb-2">
+              🛠️ Local Dev Shortcut
+            </span>
+            <p class="text-[11px] text-slate-300 mb-3">
+              No SMTP server configured. Click the button below to sign in directly without checking email or terminal:
+            </p>
+            <a href="<%= devLink %>" class="block w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs text-center rounded-lg shadow-lg shadow-sky-600/30 transition">
+              👉 Click here to Sign In now
+            </a>
+          </div>
+        <% } else { %>
+          <p class="text-[11px] text-slate-500 mt-3">
+            (If running locally, check your terminal output for the dev link)
+          </p>
+        <% } %>
       </div>
 
       <div class="text-center">
