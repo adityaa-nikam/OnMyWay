@@ -673,9 +673,43 @@ body, html {
   color: hsl(var(--destructive));
   position: relative;
   overflow: hidden;
+  transition: all 0.15s ease;
 }
 .btn-sos-hold:hover {
   background-color: hsl(var(--destructive)/8%);
+}
+.btn-sos-hold.holding {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+  border-color: #ef4444 !important;
+  transform: scale(0.96);
+}
+.btn-sos.active {
+  background-color: #ef4444 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.75) !important;
+  animation: sos-btn-glow 1.2s infinite ease-in-out;
+}
+.btn-sos.active .sos-radial-bg {
+  stroke: rgba(255, 255, 255, 0.4);
+}
+.btn-sos.active .sos-radial-progress {
+  stroke: #ffffff;
+}
+
+@keyframes sos-btn-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    transform: scale(1.04);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    transform: scale(1);
+  }
 }
 
 .sos-radial-svg {
@@ -769,6 +803,14 @@ body, html {
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4), 0 3px 10px rgba(0, 0, 0, 0.35);
 }
 
+.omw-marker-wrapper.is-sos .omw-marker-tag {
+  background-color: #ef4444 !important;
+  border-color: #fca5a5 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.85), 0 3px 12px rgba(0, 0, 0, 0.4) !important;
+  animation: sos-tag-shake 1.5s infinite ease-in-out;
+}
+
 .omw-tag-symbol {
   font-size: 13px;
   line-height: 1;
@@ -788,6 +830,17 @@ body, html {
   background-color: #22c55e;
   box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.35);
   animation: omw-live-pulse 1.8s infinite;
+}
+
+.omw-tag-sos-badge {
+  background-color: #ffffff;
+  color: #ef4444;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  margin-left: 2px;
 }
 
 .omw-tag-stale-badge {
@@ -826,9 +879,10 @@ body, html {
 }
 
 .omw-marker-wrapper.is-sos .omw-pin-circle {
-  background-color: #ef4444;
-  border-color: #ffffff;
-  box-shadow: 0 0 0 2.5px #ef4444, 0 3px 8px rgba(239, 68, 68, 0.4);
+  background-color: #ef4444 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 3.5px #dc2626, 0 4px 16px rgba(239, 68, 68, 0.9) !important;
+  animation: sos-pin-pulse 0.9s infinite alternate;
 }
 
 .omw-pin-char {
@@ -850,10 +904,10 @@ body, html {
 }
 
 .omw-marker-wrapper.is-sos .omw-pin-pointer {
-  border-top-color: #ef4444;
+  border-top-color: #ef4444 !important;
 }
 
-/* Animated Radar Wave Pulse */
+/* Animated Radar Wave Pulse (Regular) */
 .omw-pin-radar-wave {
   position: absolute;
   top: 14px;
@@ -869,8 +923,78 @@ body, html {
   z-index: 0;
 }
 
-.omw-marker-wrapper.is-sos .omw-pin-radar-wave {
-  border-color: #ef4444;
+/* Animated Multi-Ring SOS Emergency Shockwaves */
+.omw-sos-waves-container {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.omw-sos-wave {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid #ef4444;
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, rgba(239, 68, 68, 0.08) 60%, transparent 100%);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.6);
+  animation: sos-shockwave 1.9s infinite cubic-bezier(0.1, 0.8, 0.3, 1);
+  opacity: 0;
+}
+
+.omw-sos-wave.wave-1 {
+  animation-delay: 0s;
+}
+
+.omw-sos-wave.wave-2 {
+  animation-delay: 0.65s;
+}
+
+.omw-sos-wave.wave-3 {
+  animation-delay: 1.3s;
+}
+
+@keyframes sos-shockwave {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+    border-width: 3.5px;
+  }
+  40% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(5.5);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+@keyframes sos-pin-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 2.5px #dc2626, 0 4px 10px rgba(239, 68, 68, 0.6);
+  }
+  100% {
+    transform: scale(1.14);
+    box-shadow: 0 0 0 5.5px #ef4444, 0 8px 22px rgba(239, 68, 68, 0.95);
+  }
+}
+
+@keyframes sos-tag-shake {
+  0%, 100% {
+    transform: translateZ(0) scale(1);
+  }
+  25% {
+    transform: translateZ(0) scale(1.05) rotate(-1.5deg);
+  }
+  75% {
+    transform: translateZ(0) scale(1.05) rotate(1.5deg);
+  }
 }
 
 @keyframes omw-radar-wave {

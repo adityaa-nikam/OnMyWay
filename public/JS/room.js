@@ -18,6 +18,7 @@ let watchId = null;
 let userMarker = null;
 let userGhostCircle = null;
 let userAccuracyCircle = null;
+let userSosAuraCircle = null;
 let lastKnownLat = null;
 let lastKnownLng = null;
 let hasCenteredOnce = false;
@@ -223,11 +224,11 @@ function createZenlyMarkerIcon(displayName, isSelf, isSos, isStale = false) {
   const initial = (displayName || "U").trim().charAt(0).toUpperCase();
   const safeName = (displayName || "User").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  const symbol = isSos ? "🆘" : (isSelf ? "📍" : "👤");
+  const symbol = isSos ? "🚨" : (isSelf ? "📍" : "👤");
   const roleClass = isSelf ? "is-self" : "is-peer";
   const sosClass = isSos ? "is-sos" : "";
   const staleClass = isStale ? "is-stale" : "";
-  const labelText = isSelf ? `${safeName} (You)` : safeName;
+  const labelText = isSos ? `SOS: ${safeName}` : (isSelf ? `${safeName} (You)` : safeName);
 
   const html = `
     <div class="omw-marker-wrapper ${roleClass} ${sosClass} ${staleClass}" title="${safeName}">
@@ -235,13 +236,19 @@ function createZenlyMarkerIcon(displayName, isSelf, isSos, isStale = false) {
       <div class="omw-marker-tag">
         <span class="omw-tag-symbol">${symbol}</span>
         <span class="omw-tag-label">${labelText}</span>
-        ${isSelf && !isStale ? '<span class="omw-tag-live-dot" title="Live GPS Active"></span>' : ''}
-        ${isStale ? '<span class="omw-tag-stale-badge">Paused</span>' : ''}
+        ${isSos ? '<span class="omw-tag-sos-badge">EMERGENCY</span>' : (isSelf && !isStale ? '<span class="omw-tag-live-dot" title="Live GPS Active"></span>' : '')}
+        ${isStale && !isSos ? '<span class="omw-tag-stale-badge">Paused</span>' : ''}
       </div>
 
-      <!-- Pin Body & Pulse Radar -->
+      <!-- Pin Body & Concentric Radar Waves -->
       <div class="omw-pin-body">
-        ${!isStale ? '<div class="omw-pin-radar-wave"></div>' : ''}
+        ${isSos ? `
+          <div class="omw-sos-waves-container">
+            <div class="omw-sos-wave wave-1"></div>
+            <div class="omw-sos-wave wave-2"></div>
+            <div class="omw-sos-wave wave-3"></div>
+          </div>
+        ` : (!isStale ? '<div class="omw-pin-radar-wave"></div>' : '')}
         <div class="omw-pin-circle">
           <span class="omw-pin-char">${initial}</span>
         </div>
@@ -828,6 +835,11 @@ function onLocationUpdate(position) {
     userMarker.setPopupContent(createSafePopup(localDisplayName, true, now, isGhostMode));
   }
 
+  // Update SOS aura circle if active
+  if (isSosActive && userSosAuraCircle) {
+    userSosAuraCircle.setLatLng([latitude, longitude]);
+  }
+
   // Update own ghost circle
   if (isGhostMode) {
     if (userGhostCircle) {
@@ -1132,6 +1144,7 @@ function initSosHoldButton() {
   function startHold(e) {
     if (e.type === "mousedown" && e.button !== 0) return;
     e.preventDefault();
+    btn.classList.add("holding");
     sosHoldStart = Date.now();
 
     function updateProgress() {
@@ -1150,6 +1163,7 @@ function initSosHoldButton() {
   }
 
   function cancelHold() {
+    btn.classList.remove("holding");
     if (sosHoldAnimFrame) {
       cancelAnimationFrame(sosHoldAnimFrame);
       sosHoldAnimFrame = null;
@@ -1171,6 +1185,15 @@ function initSosHoldButton() {
   btn.addEventListener("mouseleave", cancelHold);
   btn.addEventListener("touchend", cancelHold);
   btn.addEventListener("touchcancel", cancelHold);
+
+  btn.addEventListener("click", () => {
+    if (!isSosActive) {
+      const elapsed = Date.now() - sosHoldStart;
+      if (elapsed < SOS_HOLD_DURATION_MS) {
+        showProximityToast("⚠️ Press and hold SOS for 3 seconds to trigger emergency alert");
+      }
+    }
+  });
 }
 
 function triggerSosBeacon() {
@@ -1181,6 +1204,10 @@ function triggerSosBeacon() {
   if (btnSos) {
     btnSos.classList.add("active");
   }
+
+  // Play high-priority alert sound
+  pingSound.currentTime = 0;
+  pingSound.play().catch(() => {});
 
   if (!isSharing) {
     startLocationSharing();
@@ -1198,6 +1225,23 @@ function triggerSosBeacon() {
 
   if (userMarker) {
     userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, true));
+    userMarker.setZIndexOffset(2000);
+    userMarker.openPopup();
+  }
+
+  // Draw expanding geographic SOS aura on map
+  if (lastKnownLat !== null && lastKnownLng !== null) {
+    if (userSosAuraCircle) map.removeLayer(userSosAuraCircle);
+    userSosAuraCircle = L.circle([lastKnownLat, lastKnownLng], {
+      radius: 120,
+      color: "#ef4444",
+      fillColor: "#ef4444",
+      fillOpacity: 0.25,
+      weight: 2,
+      dashArray: "4, 6"
+    }).addTo(map);
+
+    map.setView([lastKnownLat, lastKnownLng], 17);
   }
 }
 window.triggerSosBeacon = triggerSosBeacon;
@@ -1232,7 +1276,14 @@ async function cancelActiveSos() {
   isSosActive = false;
   const btnSos = document.getElementById("btn-sos");
   if (btnSos) btnSos.classList.remove("active");
-  if (userMarker) userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, false));
+  if (userSosAuraCircle) {
+    map.removeLayer(userSosAuraCircle);
+    userSosAuraCircle = null;
+  }
+  if (userMarker) {
+    userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, false));
+    userMarker.setZIndexOffset(1000);
+  }
 }
 window.cancelActiveSos = cancelActiveSos;
 
@@ -1272,10 +1323,11 @@ socket.on("sos-broadcast", (alertData) => {
   const isMe = alertData.name === localDisplayName;
   showActiveSosBanner(isMe, alertData.name, alertData.sosId || alertData.id);
 
-  // Update peer marker to SOS pulse
+  // Update peer marker to SOS pulse & waves
   if (alertData.id && markers.has(alertData.id)) {
     const marker = markers.get(alertData.id);
     marker.setIcon(createZenlyMarkerIcon(alertData.name, false, true));
+    marker.setZIndexOffset(2000);
     if (alertData.latitude && alertData.longitude) {
       map.setView([alertData.latitude, alertData.longitude], 17);
       marker.openPopup();
@@ -1294,7 +1346,17 @@ socket.on("sos-updated", (event) => {
 
 socket.on("sos-cancelled", () => {
   dismissSosBanner();
-  if (userMarker) userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, false));
+  isSosActive = false;
+  const btnSos = document.getElementById("btn-sos");
+  if (btnSos) btnSos.classList.remove("active");
+  if (userSosAuraCircle) {
+    map.removeLayer(userSosAuraCircle);
+    userSosAuraCircle = null;
+  }
+  if (userMarker) {
+    userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, false));
+    userMarker.setZIndexOffset(1000);
+  }
   markers.forEach((m, id) => {
     const loc = activeLocations.get(id);
     if (loc) m.setIcon(createZenlyMarkerIcon(loc.name, false, false));
