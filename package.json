@@ -1,13 +1,22 @@
 {
-  "name": "realtime-hub",
+  "name": "onmyway",
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "test": "node test-rooms-security.js && node test-milestone1.js",
+    "test:security": "node test-rooms-security.js",
+    "test:milestone1": "node test-milestone1.js"
   },
   "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cookie-parser": "^1.4.7",
+    "ejs": "^3.1.9",
     "express": "^4.19.2",
-    "socket.io": "^4.8.1",
-    "ejs": "^3.1.9"
+    "nodemailer": "^10.2.1",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
   }
 }

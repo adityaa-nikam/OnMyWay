@@ -1,23 +1,212 @@
 body, html {
   height: 100%;
   margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  background: #f8fafc;
 }
 
 #map {
   height: 100%;
   width: 100%;
+  z-index: 1;
 }
 
-.back {
+/* Floating Top Bar */
+.top-bar {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background: white;
-  color: black;
-  padding: 6px 10px;
-  border-radius: 8px;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+  pointer-events: none;
+  flex-wrap: wrap;
+}
+
+.bar-pill {
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #1f2937;
+  padding: 8px 14px;
+  border-radius: 12px;
   text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.back-btn:hover {
+  background: #f3f4f6;
+  color: #111;
+}
+
+.room-badge {
+  font-family: monospace;
+}
+
+.count-badge {
+  font-size: 0.8rem;
+  color: #0369a1;
+  background: rgba(240, 249, 255, 0.95);
+  border-color: #bae6fd;
+}
+
+/* Error / Permission Banner */
+.error-banner {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  width: 520px;
+  background: #fef2f2;
+  border: 1px solid #f87171;
+  color: #991b1b;
+  padding: 10px 16px;
+  border-radius: 12px;
+  z-index: 2000;
+  box-shadow: 0 8px 24px rgba(153, 27, 27, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.88rem;
   font-weight: 500;
-  z-index: 9999;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: slideDown 0.2s ease-out;
+}
+
+.error-close {
+  background: transparent;
+  border: none;
+  color: #991b1b;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.error-close:hover {
+  background: rgba(153, 27, 27, 0.1);
+}
+
+/* Bottom Controls */
+.bottom-control-bar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 12px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  max-width: 94%;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Buttons */
+.ctrl-btn {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: #059669;
+  color: #ffffff;
+}
+.btn-primary:hover {
+  background: #047857;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+}
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+/* Sharing Indicator */
+.sharing-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #065f46;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulseGreen 1.5s infinite;
+}
+
+@keyframes pulseGreen {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Leaflet Safe Popups */
+.leaflet-safe-popup {
+  padding: 2px;
 }

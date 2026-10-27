@@ -3,27 +3,210 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RealTime Hub</title>
+  <title>OnMyWay (OMW) — Share until you arrive</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen bg-white text-black">
-  <h1 class="text-4xl font-bold mb-8 tracking-tight flex items-center gap-2">
-    ⚡ <span class="font-extrabold">RealTime Hub</span>
-  </h1>
+<body class="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-slate-100 p-4 font-sans">
+  <div class="max-w-xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+    <!-- Header & Brand -->
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 text-2xl mb-2">
+        ⚡
+      </div>
+      <h1 class="text-3xl font-extrabold tracking-tight flex items-center justify-center gap-2 text-white">
+        <span>OnMyWay</span>
+        <span class="text-sky-400 font-mono text-xl">(OMW)</span>
+      </h1>
+      <p class="text-slate-400 text-sm mt-1 font-medium">
+        Share until you arrive.
+      </p>
+    </div>
 
-  <div class="flex gap-6">
-    <a href="/chat"
-       class="bg-black hover:bg-gray-800 text-white px-10 py-3 rounded-xl text-lg font-semibold shadow-md transition-transform transform hover:scale-105">
-      💬 Chat
-    </a>
-    <a href="/location"
-       class="bg-black hover:bg-gray-800 text-white px-10 py-3 rounded-xl text-lg font-semibold shadow-md transition-transform transform hover:scale-105">
-      📍 Location
-    </a>
+    <!-- Account & Persistent Groups Entry Point -->
+    <div class="mb-6 p-4 rounded-xl bg-sky-950/30 border border-sky-800/40 flex items-center justify-between gap-3">
+      <div>
+        <h3 class="text-xs font-bold text-sky-300 uppercase tracking-wider">Account-Based Groups</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Persistent group coordination, member management & message history</p>
+      </div>
+      <a href="/groups" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition shrink-0 shadow-lg shadow-sky-600/20">
+        Sign In / Groups →
+      </a>
+    </div>
+
+    <!-- Ephemeral Guest Mode Banner -->
+    <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+      <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">⚡ Ephemeral Guest Mode</span>
+      <span class="text-[11px] text-slate-500 font-medium">Zero database storage</span>
+    </div>
+
+    <!-- Active / Detected Room State -->
+    <div id="room-active-box" class="hidden mb-6 p-4 rounded-xl bg-slate-800/80 border border-slate-700">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs uppercase font-semibold tracking-wider text-emerald-400">● Active Guest Room</span>
+        <span id="room-badge" class="text-xs font-mono bg-slate-950 px-2 py-1 rounded text-slate-300"></span>
+      </div>
+      <p class="text-xs text-slate-400 mb-3">Share this invite link with your group:</p>
+      <div class="flex gap-2 mb-4">
+        <input id="invite-link-input" type="text" readonly
+               class="flex-1 bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-xs font-mono text-slate-300 select-all outline-none" />
+        <button id="copy-btn" onclick="copyInvite()"
+                class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition">
+          Copy
+        </button>
+      </div>
+
+      <a id="btn-enter-room" href="#"
+         class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-base font-bold shadow-lg transition mb-3">
+        🚀 Enter Workspace (Chat & Live Map)
+      </a>
+
+      <div class="grid grid-cols-2 gap-3">
+        <a id="btn-enter-chat" href="#"
+           class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-medium transition">
+          💬 Chat Only
+        </a>
+        <a id="btn-enter-location" href="#"
+           class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-medium transition">
+          📍 Map Only
+        </a>
+      </div>
+    </div>
+
+    <!-- Action Section: Create Room or Join -->
+    <div id="room-actions" class="space-y-4">
+      <button id="create-room-btn" onclick="createNewRoom()"
+              class="w-full bg-slate-100 hover:bg-white text-slate-950 py-3 rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
+        🔒 Start Quick Ephemeral Guest Room
+      </button>
+
+      <div class="relative flex py-2 items-center">
+        <div class="flex-grow border-t border-slate-800"></div>
+        <span class="flex-shrink mx-4 text-xs uppercase tracking-widest text-slate-500 font-semibold">Or join guest room</span>
+        <div class="flex-grow border-t border-slate-800"></div>
+      </div>
+
+      <form id="join-form" onsubmit="handleJoinSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Guest Room Invite Link or URL</label>
+          <input id="join-input" type="text" placeholder="Paste invite link or ?roomId=...&token=..."
+                 class="w-full bg-slate-950 border border-slate-800 focus:border-slate-600 px-4 py-2.5 rounded-xl text-sm text-white placeholder-slate-600 outline-none transition" />
+        </div>
+        <button type="submit"
+                class="w-full bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl font-semibold text-sm transition">
+          Join Guest Room
+        </button>
+      </form>
+    </div>
+
+    <div id="status-msg" class="hidden mt-4 p-3 rounded-lg text-xs text-center"></div>
+
+    <p class="text-slate-600 text-center mt-6 text-xs tracking-wide">
+      OnMyWay (OMW) · Room-Isolated Real-Time Sharing & Following · Timing-Safe Security
+    </p>
   </div>
 
-  <p class="text-gray-600 mt-10 text-sm tracking-wide">
-    Node.js · Socket.IO · Express · Leaflet.js
-  </p>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const existingRoomId = params.get('roomId');
+    const existingToken = params.get('token');
+
+    if (existingRoomId && existingToken) {
+      showActiveRoom(existingRoomId, existingToken);
+    }
+
+    async function createNewRoom() {
+      const btn = document.getElementById('create-room-btn');
+      btn.disabled = true;
+      btn.textContent = 'Generating Secure Session...';
+      try {
+        const res = await fetch('/api/rooms', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showActiveRoom(data.roomId, data.token);
+          showMessage('Room created! Share the invite link with your group.', 'success');
+        } else {
+          showMessage('Failed to create room', 'error');
+        }
+      } catch (err) {
+        showMessage('Network error while creating room', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔒 Create New Private Room';
+      }
+    }
+
+    function showActiveRoom(roomId, token) {
+      const activeBox = document.getElementById('room-active-box');
+      const badge = document.getElementById('room-badge');
+      const linkInput = document.getElementById('invite-link-input');
+      const roomBtn = document.getElementById('btn-enter-room');
+      const chatBtn = document.getElementById('btn-enter-chat');
+      const locBtn = document.getElementById('btn-enter-location');
+
+      const origin = window.location.origin;
+      const inviteUrl = `${origin}/room?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
+
+      badge.textContent = `ID: ${roomId}`;
+      linkInput.value = inviteUrl;
+      roomBtn.href = `/room?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
+      chatBtn.href = `/chat?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
+      locBtn.href = `/location?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
+
+      activeBox.classList.remove('hidden');
+    }
+
+    function copyInvite() {
+      const input = document.getElementById('invite-link-input');
+      navigator.clipboard.writeText(input.value).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 2000);
+      });
+    }
+
+    function handleJoinSubmit(e) {
+      e.preventDefault();
+      const raw = document.getElementById('join-input').value.trim();
+      if (!raw) return;
+
+      try {
+        let url;
+        if (raw.startsWith('http://') || raw.startsWith('https://')) {
+          url = new URL(raw);
+        } else if (raw.startsWith('?')) {
+          url = new URL(window.location.origin + '/' + raw);
+        } else {
+          // Check if space separated or comma separated roomId and token
+          const parts = raw.split(/[:\s,]+/);
+          if (parts.length >= 2) {
+            url = new URL(`${window.location.origin}/?roomId=${encodeURIComponent(parts[0])}&token=${encodeURIComponent(parts[1])}`);
+          } else {
+            showMessage('Invalid invite link. Please provide a full invite URL.', 'error');
+            return;
+          }
+        }
+
+        const rId = url.searchParams.get('roomId');
+        const rTok = url.searchParams.get('token');
+        if (rId && rTok) {
+          showActiveRoom(rId, rTok);
+          showMessage('Joined room successfully! Choose Chat or Location above.', 'success');
+        } else {
+          showMessage('Missing roomId or token in invite URL', 'error');
+        }
+      } catch (err) {
+        showMessage('Invalid URL format', 'error');
+      }
+    }
+
+    function showMessage(msg, type) {
+      const el = document.getElementById('status-msg');
+      el.textContent = msg;
+      el.className = `mt-4 p-3 rounded-lg text-xs text-center ${
+        type === 'success' ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800' : 'bg-red-950/60 text-red-300 border border-red-800'
+      }`;
+      el.classList.remove('hidden');
+    }
+  </script>
 </body>
 </html>

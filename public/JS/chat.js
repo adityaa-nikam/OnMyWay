@@ -3,51 +3,56 @@ const socket = io("/chat");
 const form = document.getElementById("send-container");
 const messageInput = document.getElementById("messageInp");
 const messageContainer = document.querySelector(".container");
+const roomBadge = document.getElementById("room-header-badge");
 
-// Load sound
+// Audio alert
 const audio = new Audio("/ting.mp3");
 
-// Helper: current time as HH:MM
-function timeNow() {
-  const d = new Date();
+// Helper: format timestamp as HH:MM
+function formatTime(ts) {
+  const d = ts ? new Date(ts) : new Date();
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Append a structured message to chat box
-// opts: { name, message, position: 'left'|'right', system: boolean }
+// Append a structured message to chat container
 function appendMessage(opts) {
-  const { name, message, position = 'left', system = false } = opts || {};
+  const { name, message, position = 'left', system = false, error = false, timestamp } = opts || {};
   const messageElement = document.createElement('div');
   messageElement.classList.add('message', position);
 
   if (system) {
     messageElement.classList.add('system');
-    messageElement.innerText = message;
+    if (error) {
+      messageElement.style.background = '#fee2e2';
+      messageElement.style.color = '#991b1b';
+      messageElement.style.border = '1px solid #f87171';
+    }
+    messageElement.textContent = message;
   } else {
-    // name (optional)
+    // Name element (sanitized via textContent)
     if (name) {
       const nameEl = document.createElement('div');
       nameEl.className = 'name';
-      nameEl.innerText = name;
+      nameEl.textContent = name;
       messageElement.appendChild(nameEl);
     }
 
-    // message text
+    // Message text element (sanitized via textContent)
     const textEl = document.createElement('div');
     textEl.className = 'text';
-    textEl.innerText = message;
+    textEl.textContent = message;
     messageElement.appendChild(textEl);
 
-    // time on the right
+    // Timestamp
     const timeEl = document.createElement('span');
     timeEl.className = 'time';
-    timeEl.innerText = timeNow();
+    timeEl.textContent = formatTime(timestamp);
     messageElement.appendChild(timeEl);
   }
 
-  messageContainer.append(messageElement);
+  messageContainer.appendChild(messageElement);
 
-  // Play sound for received messages only
+  // Play sound for incoming chat messages
   if (position === 'left' && !system) {
     audio.currentTime = 0;
     audio.play().catch(() => {});
@@ -57,38 +62,112 @@ function appendMessage(opts) {
   messageContainer.scrollTop = messageContainer.scrollHeight;
 }
 
-// Ask username (rename to avoid colliding with window.name)
-const username = prompt("Enter your name:");
-socket.emit("new-user-joined", username);
+// Parse room credentials from URL
+const urlParams = new URLSearchParams(window.location.search);
+const roomId = urlParams.get('roomId');
+const token = urlParams.get('token');
 
-// Someone joins
+if (!roomId || !token) {
+  appendMessage({
+    message: "❌ Missing room credentials. Please create or join a room from the home page.",
+    position: 'left',
+    system: true,
+    error: true
+  });
+  if (roomBadge) {
+    roomBadge.textContent = "No Room Selected";
+    roomBadge.style.color = "#ef4444";
+  }
+} else {
+  if (roomBadge) {
+    roomBadge.textContent = `Room #${roomId}`;
+  }
+
+  // Prompt user for nickname
+  let enteredName = prompt("Enter your display name (max 30 chars):") || "Guest";
+
+  // Request room membership from server
+  socket.emit("join-room", { roomId, token, name: enteredName }, (response) => {
+    if (response && response.success) {
+      if (roomBadge) {
+        roomBadge.textContent = `Room #${roomId} (${response.displayName})`;
+        roomBadge.style.color = "#059669";
+      }
+      appendMessage({
+        message: `Connected to private room as "${response.displayName}"`,
+        position: 'left',
+        system: true
+      });
+    } else {
+      const errMsg = (response && response.error) ? response.error : 'Unauthorized access';
+      if (roomBadge) {
+        roomBadge.textContent = `Error: ${errMsg}`;
+        roomBadge.style.color = "#dc2626";
+      }
+      appendMessage({
+        message: `❌ Access Denied: ${errMsg}`,
+        position: 'left',
+        system: true,
+        error: true
+      });
+      alert(`Access Denied: ${errMsg}`);
+      window.location.href = `/?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
+    }
+  });
+}
+
+// User joins notification from server
 socket.on('user-joined', (name) => {
-  appendMessage({ message: `${name} joined the chat`, position: 'left', system: true });
+  appendMessage({ message: `${name} joined the room`, position: 'left', system: true });
 });
 
-// When you send
+// Incoming message from authorized peer
+socket.on('receive', (data) => {
+  if (data && typeof data === 'object') {
+    appendMessage({
+      name: data.name,
+      message: data.message,
+      timestamp: data.timestamp,
+      position: 'left'
+    });
+  }
+});
+
+// User left notification
+socket.on('left', (name) => {
+  appendMessage({ message: `${name} left the room`, position: 'left', system: true });
+});
+
+// Server-side error notice (rate limiting, validation failure)
+socket.on('error-notice', (err) => {
+  appendMessage({
+    message: `⚠️ ${err.message || 'Action rejected by server'}`,
+    position: 'left',
+    system: true,
+    error: true
+  });
+});
+
+// Send message handler
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   const message = messageInput.value.trim();
-  if (message) {
-    appendMessage({ name: 'You', message, position: 'right' });
-    // send both name and message to the server to avoid relying solely on server-side mapping
-    socket.emit('send', { name: username, message });
-    messageInput.value = "";
-  }
-});
 
-// When receiving a message
-socket.on('receive', (data) => {
-  // be defensive: data may be a string or an object
-  if (typeof data === 'string') {
-    appendMessage({ message: data, position: 'left' });
-  } else {
-    appendMessage({ name: data.name || '', message: data.message || '', position: 'left' });
-  }
-});
+  if (!message) return;
 
-// When someone leaves
-socket.on('left', (name) => {
-  appendMessage({ message: `${name} left the chat`, position: 'left', system: true });
+  // Optimistically display own message
+  appendMessage({ name: 'You', message, position: 'right' });
+  messageInput.value = "";
+
+  // SENDER IDENTITY IS ENFORCED BY SERVER - only message payload is sent
+  socket.emit('send', { message }, (ack) => {
+    if (ack && !ack.success) {
+      appendMessage({
+        message: `Failed to deliver: ${ack.error || 'Server rejected message'}`,
+        position: 'left',
+        system: true,
+        error: true
+      });
+    }
+  });
 });

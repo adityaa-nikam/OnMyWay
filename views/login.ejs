@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — OnMyWay (OMW)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 font-sans">
+  <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-3xl mb-3">
+        ⚡
+      </div>
+      <h1 class="text-3xl font-extrabold text-white tracking-tight">OnMyWay <span class="text-sky-400 font-mono text-xl">(OMW)</span></h1>
+      <p class="text-sm text-slate-400 mt-2 font-medium">Share until you arrive.</p>
+    </div>
+
+    <% if (sent) { %>
+      <div class="bg-emerald-950/40 border border-emerald-800/60 rounded-xl p-5 mb-6 text-center">
+        <div class="text-2xl mb-2">📨</div>
+        <h3 class="text-sm font-bold text-emerald-300">Magic Link Sent!</h3>
+        <p class="text-xs text-slate-400 mt-1">
+          Check your email for your one-click sign-in link. The link expires in 15 minutes.
+        </p>
+        <p class="text-[11px] text-slate-500 mt-3">
+          (If running locally, check your terminal output for the dev link)
+        </p>
+      </div>
+
+      <div class="text-center">
+        <a href="/login" class="text-xs text-sky-400 hover:underline">Use a different email</a>
+      </div>
+    <% } else { %>
+      <% if (error) { %>
+        <div class="bg-red-950/40 border border-red-800/60 rounded-xl p-3 mb-4 text-xs text-red-300 text-center font-medium">
+          <%= error %>
+        </div>
+      <% } %>
+
+      <form action="/auth/magic-link" method="POST" class="space-y-4">
+        <input type="hidden" name="returnUrl" value="<%= returnUrl %>" />
+
+        <div>
+          <label for="email" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            Work or Personal Email
+          </label>
+          <input type="email" id="email" name="email" required placeholder="name@example.com"
+                 class="w-full bg-slate-950 border border-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none transition" />
+        </div>
+
+        <button type="submit"
+                class="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm shadow-lg shadow-sky-600/20 transition active:scale-[0.98]">
+          Send Magic Link →
+        </button>
+      </form>
+
+      <div class="mt-8 pt-6 border-t border-slate-800/80 text-center space-y-3">
+        <p class="text-xs text-slate-500">
+          Want to test without an account?
+        </p>
+        <a href="/" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 transition">
+          <span>⚡ Try Ephemeral Guest Mode (No sign-in required)</span>
+        </a>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>

@@ -3,20 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NexChat - Real-time Chat</title>
+  <title>OnMyWay (OMW) — Private Chat</title>
   <link rel="stylesheet" href="/CSS/chat.css">
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/JS/chat.js"></script>
 </head>
 <body>
-  <a href="/" class="back">← Back</a>
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;">
+    <a href="/" class="back">← Back to Hub</a>
+    <div id="room-header-badge" style="font-family: monospace; font-size: 0.85rem; background: #f3f4f6; padding: 6px 12px; border-radius: 8px; border: 1px solid #e5e7eb; color: #374151;">
+      Connecting to Room...
+    </div>
+  </div>
+
   <nav>
     <img src="/chatLOGO.png" class="logo" alt="chatapp Logo">
   </nav>
+
   <div class="container"></div>
+
   <div class="send">
     <form id="send-container">
-      <input type="text" id="messageInp" placeholder="Enter your message here">
+      <input type="text" id="messageInp" placeholder="Enter your message here" maxlength="2000" autocomplete="off">
       <button class="btn" type="submit">Send</button>
     </form>
   </div>

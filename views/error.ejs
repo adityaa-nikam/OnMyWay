@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== 'undefined' ? title : 'Error' %> — OnMyWay</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 font-sans">
+  <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl text-center">
+    <div class="text-4xl mb-3">⚠️</div>
+    <h1 class="text-2xl font-bold text-white mb-2"><%= typeof title !== 'undefined' ? title : 'Notice' %></h1>
+    <p class="text-slate-400 text-sm mb-6"><%= typeof message !== 'undefined' ? message : 'An unexpected condition occurred.' %></p>
+    <div class="flex gap-3 justify-center">
+      <a href="/groups" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 font-semibold text-sm transition">Go to My Groups</a>
+      <a href="/" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition">Home</a>
+    </div>
+  </div>
+</body>
+</html>

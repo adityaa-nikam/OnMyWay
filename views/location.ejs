@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Realtime Tracker</title>
+  <title>OnMyWay (OMW) — Private Live Location</title>
   <link rel="stylesheet" href="/CSS/location.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -11,7 +11,43 @@
   <script defer src="/JS/location.js"></script>
 </head>
 <body>
-  <a href="/" class="back">← Back</a>
+  <!-- Floating Top Navigation & Status -->
+  <div class="top-bar">
+    <a href="/" class="bar-pill back-btn">← Back to Hub</a>
+    <div id="room-status-badge" class="bar-pill room-badge">
+      Connecting to Room...
+    </div>
+    <div id="sharer-count-badge" class="bar-pill count-badge">
+      👥 0 sharing
+    </div>
+  </div>
+
+  <!-- Error / Permission Alert Banner -->
+  <div id="error-banner" class="error-banner hidden">
+    <span id="error-message" class="error-text"></span>
+    <button class="error-close" onclick="dismissError()">✕</button>
+  </div>
+
+  <!-- Bottom Floating Location Controls -->
+  <div class="bottom-control-bar">
+    <div id="sharing-indicator" class="sharing-pill hidden">
+      <span class="pulse-dot"></span>
+      <span class="sharing-text">Sharing Live Location</span>
+    </div>
+
+    <button id="start-share-btn" class="ctrl-btn btn-primary" onclick="startLocationSharing()">
+      📍 Share my location
+    </button>
+
+    <button id="stop-share-btn" class="ctrl-btn btn-danger hidden" onclick="stopLocationSharing()">
+      ⏹ Stop sharing
+    </button>
+
+    <button id="recenter-btn" class="ctrl-btn btn-secondary" onclick="recenterMap()">
+      🎯 Center on me
+    </button>
+  </div>
+
   <div id="map"></div>
 </body>
 </html>

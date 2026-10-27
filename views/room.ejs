@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title><%= typeof group !== 'undefined' ? group.name + ' — OnMyWay (OMW)' : 'OnMyWay (OMW) — Share until you arrive' %></title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/CSS/room.css?v=<%= Date.now() %>" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    window.__OMW_CONFIG__ = {
+      isPersistentGroup: <%= typeof isPersistentGroup !== 'undefined' && isPersistentGroup ? 'true' : 'false' %>,
+      groupId: "<%= typeof groupId !== 'undefined' ? groupId : '' %>",
+      groupName: "<%= typeof group !== 'undefined' ? group.name.replace(/"/g, '\\"') : '' %>",
+      currentUser: <%- typeof user !== 'undefined' && user ? JSON.stringify(user) : 'null' %>,
+      csrfToken: "<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>"
+    };
+  </script>
+  <script defer src="/socket.io/socket.io.js"></script>
+  <script defer src="/JS/room.js?v=<%= Date.now() %>"></script>
+</head>
+<body class="theme-dark">
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <a href="<%= typeof isPersistentGroup !== 'undefined' && isPersistentGroup ? '/groups' : '/' %>" class="brand-link" title="Return to home">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-title">OnMyWay <span class="brand-subtitle">(OMW)</span></span>
+      </a>
+
+      <% if (typeof isPersistentGroup !== 'undefined' && isPersistentGroup) { %>
+        <div class="room-pill group-pill">
+          <span class="room-label">GROUP:</span>
+          <span class="room-id font-mono"><%= group.name %></span>
+          <button id="group-invite-btn" class="icon-btn" title="Create Invite Link" onclick="openInviteModal()">
+            🔗 <span class="btn-text">Invite</span>
+          </button>
+        </div>
+      <% } else { %>
+        <div class="room-pill">
+          <span class="room-label">GUEST:</span>
+          <span id="header-room-id" class="room-id font-mono">Loading...</span>
+          <button id="copy-invite-btn" class="icon-btn" title="Copy Invite Link" onclick="copyInviteLink()">
+            📋 <span class="btn-text">Copy Link</span>
+          </button>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="header-right">
+      <div id="connection-status" class="status-pill status-connecting">
+        <span class="status-dot"></span>
+        <span id="connection-text" class="status-text">Connecting...</span>
+      </div>
+      <button id="leave-room-btn" class="leave-btn" onclick="leaveRoom()">
+        Leave
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile View Switcher (Visible only on small screens) -->
+  <nav class="mobile-tabs" aria-label="Mobile View Switcher">
+    <button id="tab-btn-map" class="tab-btn active" onclick="switchMobileTab('map')">
+      📍 Map & GPS (<span id="mobile-sharer-count">0</span>)
+    </button>
+    <button id="tab-btn-chat" class="tab-btn" onclick="switchMobileTab('chat')">
+      💬 Chat
+    </button>
+    <button id="tab-btn-members" class="tab-btn" onclick="switchMobileTab('members')">
+      👥 People (<span id="mobile-member-count">0</span>)
+    </button>
+  </nav>
+
+  <!-- Main Workspace Layout -->
+  <main class="workspace-container">
+    <!-- Left Panel: Participants & Presence Sidebar -->
+    <aside id="panel-members" class="sidebar-panel">
+      <div class="panel-header">
+        <h3>Participants</h3>
+        <span id="sidebar-member-count" class="badge">0</span>
+      </div>
+      <ul id="participant-list" class="participant-list" aria-label="Room Participants">
+        <!-- Dynamically populated safely with textContent -->
+      </ul>
+      <div class="sidebar-footer">
+        <span class="text-muted text-xs">Room isolated & crypto secured</span>
+      </div>
+    </aside>
+
+    <!-- Center/Right Panel: Interactive Leaflet Map -->
+    <section id="panel-map" class="map-panel">
+      <!-- Error / Permission Alert Banner -->
+      <div id="geo-error-banner" class="geo-banner hidden">
+        <span id="geo-error-text" class="banner-text"></span>
+        <button class="banner-close" onclick="dismissGeoError()">✕</button>
+      </div>
+
+      <!-- Map Overlay Controls -->
+      <div class="map-controls-bar">
+        <div id="sharing-pill" class="sharing-status-pill hidden">
+          <span class="live-dot"></span>
+          <span id="live-status-text" class="live-text">Live GPS Active</span>
+        </div>
+
+        <button id="btn-start-location" class="ctrl-btn btn-share" onclick="startLocationSharing()">
+          📍 Share My Location
+        </button>
+
+        <button id="btn-stop-location" class="ctrl-btn btn-stop hidden" onclick="stopLocationSharing()">
+          ⏹ Stop Sharing
+        </button>
+
+        <button id="btn-ghost-toggle" class="ctrl-btn btn-ghost" onclick="toggleGhostMode()" title="Toggle Ghost Mode (Fuzz location by ~300m)">
+          👻 Ghost: OFF
+        </button>
+
+        <button id="btn-set-meetup" class="ctrl-btn btn-meetup" onclick="toggleMeetingPointMode()" title="Click on map to drop a shared meeting point">
+          🎯 Meet Here
+        </button>
+
+        <button id="btn-recenter" class="ctrl-btn btn-recenter" onclick="recenterMap()" title="Center on my location">
+          🎯 Center On Me
+        </button>
+
+        <button id="btn-sos" class="ctrl-btn btn-sos" onclick="triggerSosBeacon()" title="Broadcast Emergency SOS Beacon">
+          🚨 SOS
+        </button>
+
+        <button id="btn-tile-toggle" class="ctrl-btn btn-tile" onclick="toggleMapTiles()" title="Toggle Dark/Light Map Style">
+          ☀️ Light Map
+        </button>
+      </div>
+
+      <!-- Shared Rendezvous Point Banner -->
+      <div id="rendezvous-banner" class="rendezvous-banner hidden">
+        <span class="rendezvous-icon">🎯</span>
+        <div class="rendezvous-info">
+          <div id="rendezvous-label" class="rendezvous-title">Meet at: Meeting Point</div>
+          <div id="rendezvous-distance" class="rendezvous-dist">Calculating distance...</div>
+        </div>
+        <div class="rendezvous-actions">
+          <button class="action-sm" onclick="focusRendezvous()" title="Zoom to meeting point">Zoom</button>
+          <button class="action-sm danger" onclick="clearMeetingPoint()" title="Clear meeting point">✕</button>
+        </div>
+      </div>
+
+      <!-- Emergency SOS Banner -->
+      <div id="sos-alert-banner" class="sos-banner hidden">
+        <span class="sos-icon">🚨</span>
+        <span id="sos-alert-text" class="sos-text">EMERGENCY: Participant triggered SOS Beacon!</span>
+        <button class="sos-close" onclick="dismissSosBanner()">✕</button>
+      </div>
+
+      <!-- Proximity Toast Notification -->
+      <div id="proximity-toast" class="proximity-toast hidden">
+        <span class="proximity-icon">🎉</span>
+        <span id="proximity-toast-text" class="proximity-text">You and a friend are close!</span>
+      </div>
+
+      <!-- Leaflet Map Container -->
+      <div id="map"></div>
+    </section>
+
+    <!-- Right Panel: Integrated Chat Feed -->
+    <section id="panel-chat" class="chat-panel">
+      <div class="panel-header chat-header">
+        <h3>Group Chat</h3>
+        <span id="chat-status-indicator" class="text-xs text-muted">Room-isolated</span>
+      </div>
+
+      <!-- Message History Container -->
+      <div id="chat-messages" class="chat-messages" role="log" aria-live="polite">
+        <!-- Message bubbles populated safely via textContent -->
+      </div>
+
+      <!-- Quick Action Chips -->
+      <div class="chat-chips-scroll" aria-label="Quick Action Responses">
+        <button type="button" class="action-chip" onclick="sendActionChip('👋 I am here!')">👋 I'm here!</button>
+        <button type="button" class="action-chip" onclick="sendActionChip('🏃 5 mins away')">🏃 5m away</button>
+        <button type="button" class="action-chip" onclick="sendActionChip('🛑 Stuck in traffic')">🛑 In traffic</button>
+        <button type="button" class="action-chip" onclick="sendActionChip('📍 Where is everyone?')">📍 Where are you?</button>
+        <button type="button" class="action-chip" onclick="sendActionChip('🎯 Heading to meetup spot')">🎯 Heading to spot</button>
+      </div>
+
+      <!-- Message Input Form -->
+      <form id="chat-form" class="chat-input-bar" onsubmit="handleSendMessage(event)">
+        <input id="chat-input" type="text" placeholder="Type a message..." maxlength="2000" autocomplete="off" />
+        <button type="submit" id="chat-send-btn" class="send-btn" aria-label="Send Message">
+          Send
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <!-- Join Room / Display Name Modal -->
+  <div id="join-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-icon">👋</span>
+        <h2>Join Private Room</h2>
+        <p class="modal-subtitle">Enter your display name to enter the coordination workspace</p>
+      </div>
+      <form id="join-room-form" onsubmit="handleJoinModalSubmit(event)">
+        <div class="form-group">
+          <label for="display-name-input">Display Name</label>
+          <input id="display-name-input" type="text" placeholder="e.g. Alex" maxlength="30" required autofocus autocomplete="nickname" />
+          <span class="field-hint">Max 30 characters. Duplicate names will automatically be disambiguated.</span>
+        </div>
+        <div id="join-error-msg" class="modal-error hidden"></div>
+        <button type="submit" id="btn-submit-join" class="btn-primary-large">
+          Join Workspace
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Invalid Invitation Error Modal -->
+  <div id="invalid-room-modal" class="modal-overlay hidden">
+    <div class="modal-card text-center">
+      <div class="modal-icon text-danger">⚠️</div>
+      <h2 id="invalid-title">Invalid Invitation</h2>
+      <p id="invalid-description" class="modal-subtitle">
+        This room does not exist, has expired, or the invitation token is invalid.
+      </p>
+      <a href="/" class="btn-primary-large inline-block">Return to Home</a>
+    </div>
+  </div>
+
+  <!-- Persistent Group Invite Modal -->
+  <div id="invite-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-icon">🔗</span>
+        <h2>Invite to Group</h2>
+        <p class="modal-subtitle">Generate a secure invitation link for your group</p>
+      </div>
+
+      <div class="form-group">
+        <label for="invite-hours-select">Link Expiration</label>
+        <select id="invite-hours-select" class="form-input">
+          <option value="24" selected>Expires in 24 hours</option>
+          <option value="72">Expires in 3 days</option>
+          <option value="168">Expires in 7 days</option>
+          <option value="720">Expires in 30 days</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="invite-max-uses">Max Uses (Optional)</label>
+        <input id="invite-max-uses" type="number" min="1" max="1000" placeholder="Unlimited uses if empty" class="form-input" />
+      </div>
+
+      <div id="generated-invite-box" class="hidden" style="margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+        <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 6px;">Your Invitation Link:</label>
+        <div style="display: flex; gap: 6px;">
+          <input id="generated-invite-input" type="text" readonly style="flex: 1; background: #0b1120; border: 1px solid rgba(255,255,255,0.15); color: #38bdf8; padding: 6px 10px; border-radius: 6px; font-family: monospace; font-size: 0.8rem;" />
+          <button id="copy-generated-invite-btn" onclick="copyGeneratedInvite()" class="icon-btn" style="padding: 6px 12px;">Copy</button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
+        <button type="button" onclick="closeInviteModal()" class="action-sm" style="padding: 8px 16px;">Close</button>
+        <button type="button" id="btn-create-invite" onclick="handleCreateInvite()" class="btn-primary-large" style="width: auto; padding: 8px 20px; font-size: 0.85rem;">Generate Link</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
