@@ -356,6 +356,196 @@ class Repository {
     const info = this.db.prepare('DELETE FROM messages WHERE group_id = ? AND created_at < ?').run(groupId, cutoff);
     return info.changes;
   }
+
+  // --- Time-Boxed Location Shares ---
+  createLocationShare({ userId, durationType, expiresAt, destinationLat = null, destinationLng = null, destinationName = null, targetGroupIds = [] }) {
+    // End any existing active share for this user first
+    const now = Date.now();
+    this.stopActiveLocationShares(userId, 'superseded');
+
+    const id = 'ls_' + crypto.randomBytes(8).toString('hex');
+    const groupIdsJson = JSON.stringify(targetGroupIds);
+    this.db.prepare(`
+      INSERT INTO location_shares (
+        id, user_id, duration_type, expires_at,
+        destination_lat, destination_lng, destination_name,
+        target_group_ids, is_active, started_at, stopped_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, NULL)
+    `).run(id, userId, durationType, expiresAt, destinationLat, destinationLng, destinationName, groupIdsJson, now);
+
+    this.addLocationShareLog({
+      userId,
+      action: 'started',
+      targetGroups: groupIdsJson
+    });
+
+    return this.getLocationShareById(id);
+  }
+
+  getLocationShareById(id) {
+    const row = this.db.prepare('SELECT * FROM location_shares WHERE id = ?').get(id);
+    if (!row) return null;
+    return {
+      ...row,
+      target_group_ids: JSON.parse(row.target_group_ids || '[]')
+    };
+  }
+
+  getActiveLocationShare(userId) {
+    const row = this.db.prepare('SELECT * FROM location_shares WHERE user_id = ? AND is_active = 1').get(userId);
+    if (!row) return null;
+    return {
+      ...row,
+      target_group_ids: JSON.parse(row.target_group_ids || '[]')
+    };
+  }
+
+  getAllActiveLocationShares() {
+    const rows = this.db.prepare('SELECT * FROM location_shares WHERE is_active = 1').all();
+    return rows.map((r) => ({
+      ...r,
+      target_group_ids: JSON.parse(r.target_group_ids || '[]')
+    }));
+  }
+
+  updateLocationShareExpiry(shareId, newExpiresAt) {
+    this.db.prepare('UPDATE location_shares SET expires_at = ? WHERE id = ? AND is_active = 1').run(newExpiresAt, shareId);
+    const updated = this.getLocationShareById(shareId);
+    if (updated) {
+      this.addLocationShareLog({
+        userId: updated.user_id,
+        action: 'extended',
+        targetGroups: JSON.stringify(updated.target_group_ids)
+      });
+    }
+    return updated;
+  }
+
+  stopLocationShare(shareId, action = 'stopped') {
+    const now = Date.now();
+    const share = this.getLocationShareById(shareId);
+    if (!share || !share.is_active) return null;
+
+    this.db.prepare('UPDATE location_shares SET is_active = 0, stopped_at = ? WHERE id = ?').run(now, shareId);
+    this.addLocationShareLog({
+      userId: share.user_id,
+      action,
+      targetGroups: JSON.stringify(share.target_group_ids)
+    });
+    return { ...share, is_active: 0, stopped_at: now };
+  }
+
+  stopActiveLocationShares(userId, action = 'stopped') {
+    const active = this.getActiveLocationShare(userId);
+    if (active) {
+      return this.stopLocationShare(active.id, action);
+    }
+    return null;
+  }
+
+  getExpiredActiveShares(now = Date.now()) {
+    const rows = this.db.prepare('SELECT * FROM location_shares WHERE is_active = 1 AND expires_at IS NOT NULL AND expires_at <= ?').all(now);
+    return rows.map((r) => ({
+      ...r,
+      target_group_ids: JSON.parse(r.target_group_ids || '[]')
+    }));
+  }
+
+  // --- Location Share Logs ---
+  addLocationShareLog({ userId, action, targetGroups }) {
+    const id = 'log_' + crypto.randomBytes(8).toString('hex');
+    const now = Date.now();
+    this.db.prepare(`
+      INSERT INTO location_share_logs (id, user_id, action, target_groups, timestamp)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, userId, action, typeof targetGroups === 'string' ? targetGroups : JSON.stringify(targetGroups), now);
+  }
+
+  getUserLocationShareLogs(userId, limit = 50) {
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+    return this.db.prepare(`
+      SELECT * FROM location_share_logs WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?
+    `).all(userId, safeLimit);
+  }
+
+  // --- Emergency SOS Events ---
+  createSosEvent({ groupId, userId, senderName, lat = null, lng = null }) {
+    const id = 'sos_' + crypto.randomBytes(8).toString('hex');
+    const now = Date.now();
+    this.db.prepare(`
+      INSERT INTO sos_events (id, group_id, user_id, sender_name, status, lat, lng, created_at, resolved_at, responders)
+      VALUES (?, ?, ?, ?, 'active', ?, ?, ?, NULL, '[]')
+    `).run(id, groupId, userId, senderName, lat, lng, now);
+    return this.getSosEvent(id);
+  }
+
+  getSosEvent(id) {
+    const row = this.db.prepare('SELECT * FROM sos_events WHERE id = ?').get(id);
+    if (!row) return null;
+    return {
+      ...row,
+      responders: JSON.parse(row.responders || '[]')
+    };
+  }
+
+  getActiveGroupSos(groupId) {
+    const row = this.db.prepare("SELECT * FROM sos_events WHERE group_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1").get(groupId);
+    if (!row) return null;
+    return {
+      ...row,
+      responders: JSON.parse(row.responders || '[]')
+    };
+  }
+
+  addSosResponder(sosId, { userId, name }) {
+    const event = this.getSosEvent(sosId);
+    if (!event || event.status !== 'active') return null;
+
+    const responders = event.responders || [];
+    if (!responders.some((r) => r.userId === userId)) {
+      responders.push({ userId, name, timestamp: Date.now() });
+      this.db.prepare('UPDATE sos_events SET responders = ? WHERE id = ?').run(JSON.stringify(responders), sosId);
+    }
+    return this.getSosEvent(sosId);
+  }
+
+  cancelSosEvent(sosId, userId) {
+    const event = this.getSosEvent(sosId);
+    if (!event) return null;
+    if (event.user_id !== userId) return null; // Only sender can cancel as false alarm
+
+    const now = Date.now();
+    this.db.prepare("UPDATE sos_events SET status = 'cancelled', resolved_at = ? WHERE id = ?").run(now, sosId);
+    return this.getSosEvent(sosId);
+  }
+
+  // --- Status Pins (Opt-in single location pin with 24-hour auto-purge) ---
+  createStatusPin({ groupId, userId, messageId = null, chipType, lat, lng }) {
+    const id = 'pin_' + crypto.randomBytes(8).toString('hex');
+    const now = Date.now();
+    this.db.prepare(`
+      INSERT INTO status_pins (id, group_id, user_id, message_id, chip_type, lat, lng, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, groupId, userId, messageId, chipType, lat, lng, now);
+    return { id, groupId, userId, messageId, chipType, lat, lng, createdAt: now };
+  }
+
+  getStatusPinsForGroup(groupId) {
+    return this.db.prepare(`
+      SELECT sp.*, u.display_name AS sender_name
+      FROM status_pins sp
+      JOIN users u ON sp.user_id = u.id
+      WHERE sp.group_id = ?
+      ORDER BY sp.created_at DESC
+    `).all(groupId);
+  }
+
+  pruneOldStatusPins(retentionHours = 24) {
+    const cutoff = Date.now() - (retentionHours * 60 * 60 * 1000);
+    const info = this.db.prepare('DELETE FROM status_pins WHERE created_at < ?').run(cutoff);
+    return info.changes;
+  }
 }
 
 const defaultRepo = new Repository();

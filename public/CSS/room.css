@@ -1047,3 +1047,260 @@ body, html {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* --------------------------------------------------------------------------
+   Time-Boxed Sharing Pill & Countdown
+   -------------------------------------------------------------------------- */
+.share-countdown {
+  background: rgba(0, 0, 0, 0.35);
+  color: #34d399;
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn-pill-extend {
+  background: rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #a7f3d0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-pill-extend:hover {
+  background: #10b981;
+  color: #fff;
+}
+
+.btn-pill-stop {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 2px;
+}
+.btn-pill-stop:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   Emergency SOS 3-Second Radial Hold-to-Confirm
+   -------------------------------------------------------------------------- */
+.sos-hold-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.btn-sos-hold {
+  position: relative;
+  background: rgba(153, 27, 27, 0.85) !important;
+  border: 1px solid #ef4444 !important;
+  color: #fff !important;
+  padding-left: 32px !important;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+.btn-sos-hold:hover {
+  background: #b91c1c !important;
+}
+
+.sos-radial-svg {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+}
+
+.sos-radial-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 3.5;
+}
+
+.sos-radial-progress {
+  fill: none;
+  stroke: #ef4444;
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.05s linear;
+}
+
+/* SOS Banner & Action Buttons */
+.sos-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sos-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sos-responders-text {
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  margin-top: 2px;
+}
+.sos-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-sos-action {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+}
+.btn-on-it {
+  background: #10b981;
+  color: #fff;
+}
+.btn-on-it:hover {
+  background: #059669;
+}
+.btn-false-alarm {
+  background: #334155;
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.btn-false-alarm:hover {
+  background: #475569;
+}
+
+/* --------------------------------------------------------------------------
+   Quick Action Status Chips & Toggle
+   -------------------------------------------------------------------------- */
+.chat-chips-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.4);
+}
+.chip-attach-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+.chip-attach-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.chip-attach-toggle input[type="checkbox"] {
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   Time-Boxed Duration Selection Cards
+   -------------------------------------------------------------------------- */
+.duration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+.duration-card {
+  position: relative;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.15s;
+}
+.duration-card:hover {
+  border-color: #38bdf8;
+  background: rgba(30, 41, 59, 0.9);
+}
+.duration-card input[type="radio"] {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  accent-color: #38bdf8;
+}
+.duration-badge {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.duration-desc {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.audience-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.audience-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.share-log-container {
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.share-log-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+
+/* Stale Marker Styling (>2 minutes without updates) */
+.stale-marker {
+  filter: grayscale(1) opacity(0.55) !important;
+  transition: filter 0.5s ease;
+}
+.stale-tag {
+  color: #94a3b8 !important;
+  font-size: 0.7rem !important;
+  font-style: italic;
+}
+

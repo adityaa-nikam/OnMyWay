@@ -489,12 +489,23 @@ function handleSendMessage(e) {
 }
 window.handleSendMessage = handleSendMessage;
 
-// Quick Action Chips Trigger
-function sendActionChip(chipText) {
+// Quick Action Status Chips Trigger (Calm voice, opt-in location pin)
+function sendStatusChip(chipText, chipType) {
+  const attachToggle = document.getElementById("attach-location-toggle");
+  const attachLocation = Boolean(attachToggle && attachToggle.checked && lastKnownLat !== null && lastKnownLng !== null);
+
   appendChatMessage(localDisplayName, chipText, Date.now(), "self", true);
-  socket.emit("send", { message: chipText, isChip: true });
+  socket.emit("send", {
+    message: chipText,
+    isChip: true,
+    chipType: chipType || 'status',
+    attachLocation,
+    latitude: attachLocation ? lastKnownLat : null,
+    longitude: attachLocation ? lastKnownLng : null
+  });
 }
-window.sendActionChip = sendActionChip;
+window.sendStatusChip = sendStatusChip;
+window.sendActionChip = sendStatusChip; // Backwards-compatible alias
 
 function appendChatMessage(sender, text, timestamp, type, isChip) {
   if (!chatMessagesEl) return;
@@ -782,7 +793,22 @@ function onLocationUpdate(position) {
   }
 }
 
-function emitLocationUpdate(lat, lng) {
+async function getBatteryInfo() {
+  if (typeof navigator !== "undefined" && "getBattery" in navigator) {
+    try {
+      const b = await navigator.getBattery();
+      return {
+        level: Math.round(b.level * 100),
+        charging: b.charging
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function emitLocationUpdate(lat, lng) {
   let emitLat = lat;
   let emitLng = lng;
 
@@ -796,10 +822,18 @@ function emitLocationUpdate(lat, lng) {
   lastEmittedLng = lng;
   lastEmittedTime = Date.now();
 
+  const battery = await getBatteryInfo();
+
   socket.emit("send-location", {
     latitude: emitLat,
     longitude: emitLng,
-    isGhost: isGhostMode
+    isGhost: isGhostMode,
+    battery
+  }, (ack) => {
+    if (ack && ack.code === 'EXPIRED') {
+      stopLocationSharing(false);
+      appendSystemMessage("Your location sharing time expired.");
+    }
   });
 }
 
@@ -1006,41 +1040,149 @@ function clearRendezvousUI() {
 }
 
 // --------------------------------------------------------------------------
-// Emergency / SOS Beacon Feature
+// Emergency / SOS Beacon Feature (3-Second Radial Hold-to-Confirm)
 // --------------------------------------------------------------------------
+let sosHoldStart = 0;
+let sosHoldAnimFrame = null;
+const SOS_HOLD_DURATION_MS = 3000;
+let currentActiveSosId = null;
+
+function initSosHoldButton() {
+  const btn = document.getElementById("btn-sos");
+  const progressPath = document.getElementById("sos-radial-progress");
+  if (!btn || !progressPath) return;
+
+  function startHold(e) {
+    if (e.type === "mousedown" && e.button !== 0) return;
+    e.preventDefault();
+    sosHoldStart = Date.now();
+
+    function updateProgress() {
+      const elapsed = Date.now() - sosHoldStart;
+      const pct = Math.min((elapsed / SOS_HOLD_DURATION_MS) * 100, 100);
+      progressPath.setAttribute("stroke-dasharray", `${pct}, 100`);
+
+      if (elapsed >= SOS_HOLD_DURATION_MS) {
+        completeHold();
+      } else {
+        sosHoldAnimFrame = requestAnimationFrame(updateProgress);
+      }
+    }
+
+    sosHoldAnimFrame = requestAnimationFrame(updateProgress);
+  }
+
+  function cancelHold() {
+    if (sosHoldAnimFrame) {
+      cancelAnimationFrame(sosHoldAnimFrame);
+      sosHoldAnimFrame = null;
+    }
+    if (progressPath) {
+      progressPath.setAttribute("stroke-dasharray", "0, 100");
+    }
+  }
+
+  function completeHold() {
+    cancelHold();
+    triggerSosBeacon();
+  }
+
+  btn.addEventListener("mousedown", startHold);
+  btn.addEventListener("touchstart", startHold, { passive: false });
+
+  btn.addEventListener("mouseup", cancelHold);
+  btn.addEventListener("mouseleave", cancelHold);
+  btn.addEventListener("touchend", cancelHold);
+  btn.addEventListener("touchcancel", cancelHold);
+}
+
 function triggerSosBeacon() {
-  if (isSosActive) {
-    // Turn off
-    isSosActive = false;
-    btnSos.classList.remove("active");
-    btnSos.textContent = "🚨 SOS";
-    if (userMarker) {
-      userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, false));
+  if (isSosActive) return;
+
+  isSosActive = true;
+  const btnSos = document.getElementById("btn-sos");
+  if (btnSos) {
+    btnSos.classList.add("active");
+  }
+
+  if (!isSharing) {
+    startLocationSharing();
+  }
+
+  socket.emit("sos-alert", {
+    latitude: lastKnownLat,
+    longitude: lastKnownLng
+  }, (ack) => {
+    if (ack && ack.sosId) {
+      currentActiveSosId = ack.sosId;
+      showActiveSosBanner(true, localDisplayName, ack.sosId);
     }
-  } else {
-    // Activate SOS
-    if (confirm("🚨 Trigger Emergency SOS Beacon?\nThis will alert everyone in the room with an audible alarm and your live GPS beacon.")) {
-      isSosActive = true;
-      btnSos.classList.add("active");
-      btnSos.textContent = "🚨 SOS: ACTIVE";
+  });
 
-      // Make sure location is running
-      if (!isSharing) {
-        startLocationSharing();
-      }
-
-      socket.emit("sos-alert", {
-        latitude: lastKnownLat,
-        longitude: lastKnownLng
-      });
-
-      if (userMarker) {
-        userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, true));
-      }
-    }
+  if (userMarker) {
+    userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, true));
   }
 }
 window.triggerSosBeacon = triggerSosBeacon;
+
+async function respondToActiveSos() {
+  if (!currentActiveSosId) return;
+  socket.emit("sos-respond", { sosId: currentActiveSosId });
+  try {
+    await fetch(`/api/sos/${currentActiveSosId}/respond`, {
+      method: "POST",
+      headers: { "x-csrf-token": getCsrfToken() }
+    });
+  } catch (e) {}
+  const respondBtn = document.getElementById("btn-sos-respond");
+  if (respondBtn) {
+    respondBtn.textContent = "✅ Responded";
+    respondBtn.disabled = true;
+  }
+}
+window.respondToActiveSos = respondToActiveSos;
+
+async function cancelActiveSos() {
+  if (!currentActiveSosId) return;
+  socket.emit("sos-cancel", { sosId: currentActiveSosId });
+  try {
+    await fetch(`/api/sos/${currentActiveSosId}/cancel`, {
+      method: "POST",
+      headers: { "x-csrf-token": getCsrfToken() }
+    });
+  } catch (e) {}
+  dismissSosBanner();
+  isSosActive = false;
+  const btnSos = document.getElementById("btn-sos");
+  if (btnSos) btnSos.classList.remove("active");
+  if (userMarker) userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, false));
+}
+window.cancelActiveSos = cancelActiveSos;
+
+function showActiveSosBanner(isSender, senderName, sosId) {
+  currentActiveSosId = sosId;
+  const banner = document.getElementById("sos-alert-banner");
+  const alertText = document.getElementById("sos-alert-text");
+  const respondBtn = document.getElementById("btn-sos-respond");
+  const cancelBtn = document.getElementById("btn-sos-cancel");
+
+  if (!banner || !alertText) return;
+
+  alertText.textContent = `🚨 EMERGENCY ALERT: ${senderName} triggered an SOS Beacon!`;
+  banner.classList.remove("hidden");
+
+  if (isSender) {
+    if (respondBtn) respondBtn.classList.add("hidden");
+    if (cancelBtn) cancelBtn.classList.remove("hidden");
+  } else {
+    if (respondBtn) {
+      respondBtn.classList.remove("hidden");
+      respondBtn.textContent = "🛡️ I'm on it";
+      respondBtn.disabled = false;
+    }
+    if (cancelBtn) cancelBtn.classList.add("hidden");
+  }
+}
 
 // Incoming SOS Alert Broadcast
 socket.on("sos-broadcast", (alertData) => {
@@ -1050,10 +1192,8 @@ socket.on("sos-broadcast", (alertData) => {
   pingSound.currentTime = 0;
   pingSound.play().catch(() => {});
 
-  if (sosBanner && sosAlertText) {
-    sosAlertText.textContent = `🚨 EMERGENCY ALERT: ${alertData.name} triggered an SOS Beacon!`;
-    sosBanner.classList.remove("hidden");
-  }
+  const isMe = alertData.name === localDisplayName;
+  showActiveSosBanner(isMe, alertData.name, alertData.sosId || alertData.id);
 
   // Update peer marker to SOS pulse
   if (alertData.id && markers.has(alertData.id)) {
@@ -1066,10 +1206,274 @@ socket.on("sos-broadcast", (alertData) => {
   }
 });
 
+socket.on("sos-updated", (event) => {
+  if (!event) return;
+  const listEl = document.getElementById("sos-responders-list");
+  if (listEl && event.responders && event.responders.length > 0) {
+    const names = event.responders.map((r) => r.name).join(", ");
+    listEl.textContent = `Responders: ${names}`;
+  }
+});
+
+socket.on("sos-cancelled", () => {
+  dismissSosBanner();
+  if (userMarker) userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, false));
+  markers.forEach((m, id) => {
+    const loc = activeLocations.get(id);
+    if (loc) m.setIcon(createZenlyMarkerIcon(loc.name, false, false));
+  });
+});
+
 function dismissSosBanner() {
-  if (sosBanner) sosBanner.classList.add("hidden");
+  const banner = document.getElementById("sos-alert-banner");
+  if (banner) banner.classList.add("hidden");
 }
 window.dismissSosBanner = dismissSosBanner;
+
+// --------------------------------------------------------------------------
+// Time-Boxed Sharing Dialogs & Transparency Log
+// --------------------------------------------------------------------------
+let activeShareExpiresAt = null;
+let shareCountdownInterval = null;
+
+function startShareCountdown(expiresAt) {
+  activeShareExpiresAt = expiresAt;
+  if (shareCountdownInterval) clearInterval(shareCountdownInterval);
+
+  updateCountdownDisplay();
+  shareCountdownInterval = setInterval(updateCountdownDisplay, 1000);
+}
+
+function updateCountdownDisplay() {
+  const cdEl = document.getElementById("share-countdown");
+  const liveTextEl = document.getElementById("live-status-text");
+  if (!cdEl || !activeShareExpiresAt) return;
+
+  const remainingMs = Math.max(activeShareExpiresAt - Date.now(), 0);
+  if (remainingMs <= 0) {
+    cdEl.textContent = "00:00";
+    if (shareCountdownInterval) clearInterval(shareCountdownInterval);
+    stopLocationSharing(true);
+    appendSystemMessage("Your location sharing time expired.");
+    return;
+  }
+
+  const totalSecs = Math.floor(remainingMs / 1000);
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  cdEl.textContent = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+
+  if (liveTextEl) {
+    const expiryDate = new Date(activeShareExpiresAt);
+    const hhmm = expiryDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const peopleCount = Math.max((document.querySelectorAll("#participant-list li").length || 1) - 1, 1);
+    liveTextEl.textContent = `Sharing with ${peopleCount} ${peopleCount === 1 ? 'person' : 'people'} until ${hhmm}`;
+  }
+}
+
+function stopShareCountdown() {
+  if (shareCountdownInterval) {
+    clearInterval(shareCountdownInterval);
+    shareCountdownInterval = null;
+  }
+  activeShareExpiresAt = null;
+}
+
+function getCsrfToken() {
+  const match = document.cookie.match(/omw_csrf=([^;]+)/);
+  return match ? match[1] : '';
+}
+
+async function openShareSetupModal() {
+  if (!window.__OMW_CONFIG__ || !window.__OMW_CONFIG__.isPersistent) {
+    // Guest mode: 15m default
+    startLocationSharing();
+    startShareCountdown(Date.now() + 15 * 60 * 1000);
+    return;
+  }
+
+  const modal = document.getElementById("share-setup-modal");
+  const audienceEl = document.getElementById("share-audience-list");
+  if (!modal || !audienceEl) return;
+
+  audienceEl.innerHTML = "<span class='text-xs text-slate-400'>Loading your groups...</span>";
+  modal.classList.remove("hidden");
+
+  try {
+    const res = await fetch("/api/groups");
+    const data = await res.json();
+    if (data.success && data.groups) {
+      audienceEl.innerHTML = "";
+      const currentGid = window.__OMW_CONFIG__.groupId;
+      data.groups.forEach((g) => {
+        const item = document.createElement("label");
+        item.className = "audience-item";
+        const isChecked = g.id === currentGid ? "checked" : "";
+        item.innerHTML = `<input type="checkbox" name="audience-group" value="${g.id}" ${isChecked} /> <span>${g.name} (${g.member_count} members)</span>`;
+        audienceEl.appendChild(item);
+      });
+    }
+  } catch (err) {
+    audienceEl.innerHTML = "<span class='text-xs text-rose-400'>Error loading groups</span>";
+  }
+}
+window.openShareSetupModal = openShareSetupModal;
+
+function closeShareSetupModal() {
+  const modal = document.getElementById("share-setup-modal");
+  if (modal) modal.classList.add("hidden");
+}
+window.closeShareSetupModal = closeShareSetupModal;
+
+function handleDurationChange(val) {
+  const destGroup = document.getElementById("destination-input-group");
+  if (destGroup) {
+    if (val === "until_arrive") {
+      destGroup.classList.remove("hidden");
+    } else {
+      destGroup.classList.add("hidden");
+    }
+  }
+}
+window.handleDurationChange = handleDurationChange;
+
+async function confirmStartSharing() {
+  const durationInput = document.querySelector('input[name="share-duration"]:checked');
+  const durationType = durationInput ? durationInput.value : "15m";
+
+  const checkedBoxes = document.querySelectorAll('input[name="audience-group"]:checked');
+  const targetGroupIds = Array.from(checkedBoxes).map((cb) => cb.value);
+
+  if (targetGroupIds.length === 0 && window.__OMW_CONFIG__ && window.__OMW_CONFIG__.groupId) {
+    targetGroupIds.push(window.__OMW_CONFIG__.groupId);
+  }
+
+  const destNameInput = document.getElementById("destination-name-input");
+  const destinationName = destNameInput ? destNameInput.value.trim() : null;
+
+  try {
+    const res = await fetch("/api/location/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-csrf-token": getCsrfToken()
+      },
+      body: JSON.stringify({
+        durationType,
+        targetGroupIds,
+        destinationName,
+        destinationLat: lastKnownLat,
+        destinationLng: lastKnownLng
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.share) {
+      closeShareSetupModal();
+      startLocationSharing();
+      if (data.share.expires_at) {
+        startShareCountdown(data.share.expires_at);
+      }
+    } else {
+      alert(data.error || "Could not start sharing");
+    }
+  } catch (err) {
+    closeShareSetupModal();
+    startLocationSharing();
+    startShareCountdown(Date.now() + 15 * 60 * 1000);
+  }
+}
+window.confirmStartSharing = confirmStartSharing;
+
+async function extendActiveShare() {
+  try {
+    const res = await fetch("/api/location/extend", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-csrf-token": getCsrfToken()
+      },
+      body: JSON.stringify({ additionalMinutes: 15 })
+    });
+    const data = await res.json();
+    if (data.success && data.share && data.share.expires_at) {
+      startShareCountdown(data.share.expires_at);
+      appendSystemMessage("Extended location sharing by 15 minutes");
+    }
+  } catch (err) {
+    if (activeShareExpiresAt) {
+      startShareCountdown(activeShareExpiresAt + 15 * 60 * 1000);
+      appendSystemMessage("Extended location sharing by 15 minutes");
+    }
+  }
+}
+window.extendActiveShare = extendActiveShare;
+
+async function openShareLogModal() {
+  const modal = document.getElementById("share-log-modal");
+  const listEl = document.getElementById("share-log-list");
+  if (!modal || !listEl) return;
+
+  listEl.innerHTML = "<span class='text-xs text-slate-400'>Loading activity log...</span>";
+  modal.classList.remove("hidden");
+
+  try {
+    const res = await fetch("/api/location/share-log");
+    const data = await res.json();
+    if (data.success && data.logs) {
+      listEl.innerHTML = "";
+      if (data.logs.length === 0) {
+        listEl.innerHTML = "<span class='text-xs text-slate-400'>No recent location share records</span>";
+      } else {
+        data.logs.forEach((log) => {
+          const item = document.createElement("div");
+          item.className = "share-log-item";
+          const actionIcons = { started: "🟢 Started", extended: "⏳ Extended", stopped: "⏹ Stopped", expired: "⏱ Expired" };
+          const actionText = actionIcons[log.action] || log.action;
+          const timeStr = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          item.innerHTML = `<div><b>${actionText}</b><div class='text-xs text-slate-400'>Groups: ${log.target_groups}</div></div><span class='text-xs text-slate-500'>${timeStr}</span>`;
+          listEl.appendChild(item);
+        });
+      }
+    }
+  } catch (err) {
+    listEl.innerHTML = "<span class='text-xs text-rose-400'>Error loading share log</span>";
+  }
+}
+window.openShareLogModal = openShareLogModal;
+
+function closeShareLogModal() {
+  const modal = document.getElementById("share-log-modal");
+  if (modal) modal.classList.add("hidden");
+}
+window.closeShareLogModal = closeShareLogModal;
+
+// Check Stale Markers every 15 seconds (>2 minutes without updates)
+function checkStaleMarkers() {
+  const now = Date.now();
+  const STALE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
+
+  activeLocations.forEach((loc, id) => {
+    if (markers.has(id)) {
+      const marker = markers.get(id);
+      const isStale = (now - loc.updatedAt) > STALE_THRESHOLD_MS;
+      const markerEl = marker.getElement();
+      if (markerEl) {
+        if (isStale) {
+          markerEl.classList.add("stale-marker");
+        } else {
+          markerEl.classList.remove("stale-marker");
+        }
+      }
+    }
+  });
+}
+setInterval(checkStaleMarkers, 15000);
+
+// Initialize SOS hold button on page load
+document.addEventListener("DOMContentLoaded", () => {
+  initSosHoldButton();
+});
+setTimeout(initSosHoldButton, 500);
 
 // --------------------------------------------------------------------------
 // Navigation & Utilities

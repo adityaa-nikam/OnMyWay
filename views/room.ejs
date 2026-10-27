@@ -103,14 +103,21 @@
         <div id="sharing-pill" class="sharing-status-pill hidden">
           <span class="live-dot"></span>
           <span id="live-status-text" class="live-text">Live GPS Active</span>
+          <span id="share-countdown" class="share-countdown">15:00</span>
+          <button id="btn-extend-share" class="btn-pill-extend" onclick="extendActiveShare()" title="Add 15 minutes">+15m</button>
+          <button id="btn-stop-pill" class="btn-pill-stop" onclick="stopLocationSharing()" title="Stop sharing location">✕</button>
         </div>
 
-        <button id="btn-start-location" class="ctrl-btn btn-share" onclick="startLocationSharing()">
+        <button id="btn-start-location" class="ctrl-btn btn-share" onclick="openShareSetupModal()">
           📍 Share My Location
         </button>
 
         <button id="btn-stop-location" class="ctrl-btn btn-stop hidden" onclick="stopLocationSharing()">
           ⏹ Stop Sharing
+        </button>
+
+        <button id="btn-share-log" class="ctrl-btn btn-share-log" onclick="openShareLogModal()" title="View Location Sharing History">
+          📋 Share Log
         </button>
 
         <button id="btn-ghost-toggle" class="ctrl-btn btn-ghost" onclick="toggleGhostMode()" title="Toggle Ghost Mode (Fuzz location by ~300m)">
@@ -125,9 +132,16 @@
           🎯 Center On Me
         </button>
 
-        <button id="btn-sos" class="ctrl-btn btn-sos" onclick="triggerSosBeacon()" title="Broadcast Emergency SOS Beacon">
-          🚨 SOS
-        </button>
+        <!-- Emergency SOS Button with 3-Second Hold-to-Confirm & Radial Progress Ring -->
+        <div class="sos-hold-container" title="Hold for 3 seconds to trigger Emergency SOS">
+          <button id="btn-sos" type="button" class="ctrl-btn btn-sos btn-sos-hold">
+            <svg class="sos-radial-svg" viewBox="0 0 36 36">
+              <path class="sos-radial-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              <path id="sos-radial-progress" class="sos-radial-progress" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            </svg>
+            <span class="sos-label">🚨 Hold SOS</span>
+          </button>
+        </div>
 
         <button id="btn-tile-toggle" class="ctrl-btn btn-tile" onclick="toggleMapTiles()" title="Toggle Dark/Light Map Style">
           ☀️ Light Map
@@ -147,11 +161,20 @@
         </div>
       </div>
 
-      <!-- Emergency SOS Banner -->
+      <!-- Emergency SOS Banner (Interactive with 'I'm on it' and 'False alarm') -->
       <div id="sos-alert-banner" class="sos-banner hidden">
-        <span class="sos-icon">🚨</span>
-        <span id="sos-alert-text" class="sos-text">EMERGENCY: Participant triggered SOS Beacon!</span>
-        <button class="sos-close" onclick="dismissSosBanner()">✕</button>
+        <div class="sos-content">
+          <span class="sos-icon">🚨</span>
+          <div class="sos-details">
+            <span id="sos-alert-text" class="sos-text">EMERGENCY: Participant triggered SOS Beacon!</span>
+            <div id="sos-responders-list" class="sos-responders-text"></div>
+          </div>
+        </div>
+        <div class="sos-banner-actions">
+          <button id="btn-sos-respond" class="btn-sos-action btn-on-it" onclick="respondToActiveSos()">🛡️ I'm on it</button>
+          <button id="btn-sos-cancel" class="btn-sos-action btn-false-alarm hidden" onclick="cancelActiveSos()">✅ False alarm</button>
+          <button class="sos-close" onclick="dismissSosBanner()">✕</button>
+        </div>
       </div>
 
       <!-- Proximity Toast Notification -->
@@ -176,13 +199,20 @@
         <!-- Message bubbles populated safely via textContent -->
       </div>
 
-      <!-- Quick Action Chips -->
-      <div class="chat-chips-scroll" aria-label="Quick Action Responses">
-        <button type="button" class="action-chip" onclick="sendActionChip('👋 I am here!')">👋 I'm here!</button>
-        <button type="button" class="action-chip" onclick="sendActionChip('🏃 5 mins away')">🏃 5m away</button>
-        <button type="button" class="action-chip" onclick="sendActionChip('🛑 Stuck in traffic')">🛑 In traffic</button>
-        <button type="button" class="action-chip" onclick="sendActionChip('📍 Where is everyone?')">📍 Where are you?</button>
-        <button type="button" class="action-chip" onclick="sendActionChip('🎯 Heading to meetup spot')">🎯 Heading to spot</button>
+      <!-- Quick Action Status Chips (Calm voice, opt-in location pin) -->
+      <div class="chat-chips-container">
+        <div class="chat-chips-scroll" aria-label="Status Chips">
+          <button type="button" class="action-chip" onclick="sendStatusChip('On my way', 'on_my_way')">🚗 On my way</button>
+          <button type="button" class="action-chip" onclick="sendStatusChip('Running late', 'running_late')">⏳ Running late</button>
+          <button type="button" class="action-chip" onclick="sendStatusChip('Reached safe', 'reached_safe')">🏡 Reached safe</button>
+          <button type="button" class="action-chip danger" onclick="sendStatusChip('Need help', 'need_help')">🆘 Need help</button>
+        </div>
+        <div class="chip-attach-bar">
+          <label class="chip-attach-toggle">
+            <input type="checkbox" id="attach-location-toggle" />
+            <span>Attach my location pin (24h retention)</span>
+          </label>
+        </div>
       </div>
 
       <!-- Message Input Form -->
@@ -264,6 +294,88 @@
       <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
         <button type="button" onclick="closeInviteModal()" class="action-sm" style="padding: 8px 16px;">Close</button>
         <button type="button" id="btn-create-invite" onclick="handleCreateInvite()" class="btn-primary-large" style="width: auto; padding: 8px 20px; font-size: 0.85rem;">Generate Link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Time-Boxed Share Setup Modal -->
+  <div id="share-setup-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-icon">📍</span>
+        <h2>Share My Location</h2>
+        <p class="modal-subtitle">Pick how long to share and choose your audience</p>
+      </div>
+
+      <!-- Duration Selection -->
+      <div class="form-group">
+        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Duration</label>
+        <div class="duration-grid">
+          <label class="duration-card">
+            <input type="radio" name="share-duration" value="15m" checked onchange="handleDurationChange('15m')" />
+            <span class="duration-badge">⏱️ 15 min</span>
+            <span class="duration-desc">Quick errand</span>
+          </label>
+          <label class="duration-card">
+            <input type="radio" name="share-duration" value="1h" onchange="handleDurationChange('1h')" />
+            <span class="duration-badge">⏳ 1 hour</span>
+            <span class="duration-desc">Commute or trip</span>
+          </label>
+          <label class="duration-card">
+            <input type="radio" name="share-duration" value="8h" onchange="handleDurationChange('8h')" />
+            <span class="duration-badge">🏔️ 8 hours</span>
+            <span class="duration-desc">Day hike or work</span>
+          </label>
+          <label class="duration-card">
+            <input type="radio" name="share-duration" value="until_arrive" onchange="handleDurationChange('until_arrive')" />
+            <span class="duration-badge">🎯 Until I arrive</span>
+            <span class="duration-desc">Stops at destination</span>
+          </label>
+          <label class="duration-card">
+            <input type="radio" name="share-duration" value="until_stop" onchange="handleDurationChange('until_stop')" />
+            <span class="duration-badge">⏹️ Until I stop</span>
+            <span class="duration-desc">Manual stop only</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Destination picker (visible when 'until_arrive' is chosen) -->
+      <div id="destination-input-group" class="form-group hidden">
+        <label for="destination-name-input">Destination Name</label>
+        <input id="destination-name-input" type="text" placeholder="e.g. Home, Trailhead, Work" class="form-input" />
+        <span class="field-hint">Your live location will stop sharing automatically when you reach within 100m.</span>
+      </div>
+
+      <!-- Audience Control: Target Groups -->
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Audience (Who can see you?)</label>
+        <div id="share-audience-list" class="audience-list">
+          <span class="text-xs text-slate-400">Loading your groups...</span>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
+        <button type="button" onclick="closeShareSetupModal()" class="action-sm" style="padding: 8px 16px;">Cancel</button>
+        <button type="button" id="btn-confirm-start-share" onclick="confirmStartSharing()" class="btn-primary-large" style="width: auto; padding: 8px 20px; font-size: 0.85rem;">Start Sharing</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share History Log Modal -->
+  <div id="share-log-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-icon">📋</span>
+        <h2>Location Sharing Log</h2>
+        <p class="modal-subtitle">Transparent record of when you started, extended, and stopped sharing</p>
+      </div>
+
+      <div id="share-log-list" class="share-log-container">
+        <span class="text-xs text-slate-400">Loading activity log...</span>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <button type="button" onclick="closeShareLogModal()" class="action-sm" style="padding: 8px 16px;">Close</button>
       </div>
     </div>
   </div>

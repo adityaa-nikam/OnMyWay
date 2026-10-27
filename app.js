@@ -9,6 +9,8 @@ const { repo } = require('./db');
 const { sessionMiddleware, socketAuthMiddleware, verifyCsrf } = require('./middleware/auth');
 const authRouter = require('./routes/auth');
 const groupsRouter = require('./routes/groups');
+const locationRouter = require('./routes/location');
+const { locationSharingService } = require('./services/locationSharing');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,6 +23,9 @@ const roomManager = new RoomManager();
 const chatRateLimiter = new RateLimiter(5, 2000); // Max 5 chat messages per 2s per socket
 const locationRateLimiter = new RateLimiter(4, 1000); // Max 4 location updates per 1s per socket
 
+// Initialize time-boxed location sharing engine
+locationSharingService.init(io, roomManager);
+
 // Express setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -31,9 +36,10 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Mount Auth and Groups routers
+// Mount Auth, Groups, and Location routers
 app.use(authRouter);
 app.use(groupsRouter);
+app.use(locationRouter);
 
 // ---------- HTTP ROUTES ----------
 
@@ -553,6 +559,24 @@ io.on('connection', (socket) => {
       timestamp = saved.created_at;
     }
 
+    let attachedLocation = null;
+    if (isChip && payload && payload.attachLocation && validateCoordinates(payload.latitude, payload.longitude)) {
+      attachedLocation = {
+        latitude: payload.latitude,
+        longitude: payload.longitude
+      };
+      if (socket.data.isPersistent) {
+        repo.createStatusPin({
+          groupId: socket.data.groupId,
+          userId: socket.data.userId,
+          messageId,
+          chipType: payload.chipType || 'status',
+          lat: payload.latitude,
+          lng: payload.longitude
+        });
+      }
+    }
+
     // Broadcast to room (peers)
     socket.to(roomId).emit('receive', {
       id: messageId,
@@ -561,15 +585,16 @@ io.on('connection', (socket) => {
       timestamp,
       isChip,
       replyToId,
-      clientMsgId
+      clientMsgId,
+      location: attachedLocation
     });
 
     if (typeof callback === 'function') {
-      callback({ success: true, timestamp, displayName: senderName, id: messageId, clientMsgId });
+      callback({ success: true, timestamp, displayName: senderName, id: messageId, clientMsgId, location: attachedLocation });
     }
   });
 
-  // Location update (supports precise or ghost mode)
+  // Location update (supports precise or ghost mode, time-boxed checks & audience control)
   socket.on('send-location', (payload, callback) => {
     const roomId = socket.data.roomId;
     if (!checkSocketAuthorized(socket)) {
@@ -601,6 +626,21 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Server-enforced time-boxed sharing verification for persistent users
+    if (socket.data.isPersistent) {
+      const isSharing = locationSharingService.isUserActivelySharing(socket.data.userId);
+      if (!isSharing) {
+        const err = { message: 'Location sharing session is expired or not active.', code: 'EXPIRED' };
+        socket.emit('error-notice', err);
+        socket.emit('location:stopped', { id: socket.id, name: socket.data.name, reason: 'expired' });
+        if (typeof callback === 'function') callback({ success: false, error: err.message, code: 'EXPIRED' });
+        return;
+      }
+
+      // Check arrival if 'until_arrive' duration
+      locationSharingService.checkArrival(socket.data.userId, latitude, longitude);
+    }
+
     const locData = roomManager.updateLocation(roomId, socket.id, latitude, longitude, isGhost);
     if (!locData) {
       const err = { message: 'Failed to update location.', code: 'STATE_ERROR' };
@@ -609,8 +649,25 @@ io.on('connection', (socket) => {
       return;
     }
 
-    socket.to(roomId).emit('receive-location', locData);
-    io.to(roomId).emit('participants-updated', roomManager.getParticipantList(roomId));
+    // Attach battery status if provided by client (Battery Status API)
+    if (payload.battery && typeof payload.battery === 'object') {
+      locData.battery = {
+        level: typeof payload.battery.level === 'number' ? Math.min(Math.max(payload.battery.level, 0), 100) : null,
+        charging: Boolean(payload.battery.charging)
+      };
+    }
+
+    // Audience control: broadcast strictly to chosen target groups
+    if (socket.data.isPersistent) {
+      const targetGroupIds = locationSharingService.getUserTargetGroups(socket.data.userId);
+      for (const gid of targetGroupIds) {
+        socket.to(gid).emit('receive-location', locData);
+        io.to(gid).emit('participants-updated', roomManager.getParticipantList(gid));
+      }
+    } else {
+      socket.to(roomId).emit('receive-location', locData);
+      io.to(roomId).emit('participants-updated', roomManager.getParticipantList(roomId));
+    }
 
     if (typeof callback === 'function') {
       callback({ success: true, updatedAt: locData.updatedAt });
@@ -670,34 +727,108 @@ io.on('connection', (socket) => {
     if (typeof callback === 'function') callback({ success: true });
   });
 
-  // Emergency / SOS Beacon
+  // Emergency / SOS Beacon (with 60-second cooldown rate limit & persistence)
+  const socketSosCooldowns = new Map();
   socket.on('sos-alert', (payload, callback) => {
     const roomId = socket.data.roomId;
     if (!checkSocketAuthorized(socket)) {
       return;
     }
 
+    const cooldownKey = socket.data.userId || socket.id;
+    const lastSos = socketSosCooldowns.get(cooldownKey) || 0;
+    const now = Date.now();
+    if (now - lastSos < 60 * 1000) {
+      const remaining = Math.ceil((60 * 1000 - (now - lastSos)) / 1000);
+      const err = { message: `SOS cooldown active. Wait ${remaining}s before re-triggering.`, code: 'RATE_LIMIT' };
+      socket.emit('error-notice', err);
+      if (typeof callback === 'function') callback({ success: false, error: err.message });
+      return;
+    }
+    socketSosCooldowns.set(cooldownKey, now);
+
     const { latitude, longitude } = payload || {};
     const hasCoords = validateCoordinates(latitude, longitude);
 
+    let sosId = socket.id;
+    if (socket.data.isPersistent) {
+      const event = repo.createSosEvent({
+        groupId: roomId,
+        userId: socket.data.userId,
+        senderName: socket.data.name,
+        lat: hasCoords ? latitude : null,
+        lng: hasCoords ? longitude : null
+      });
+      sosId = event.id;
+    }
+
     const alertData = {
-      id: socket.id,
+      id: sosId,
+      sosId,
+      userId: socket.data.userId || null,
       name: socket.data.name,
       latitude: hasCoords ? latitude : null,
       longitude: hasCoords ? longitude : null,
-      timestamp: Date.now()
+      timestamp: now
     };
 
     io.to(roomId).emit('sos-broadcast', alertData);
 
     io.to(roomId).emit('receive', {
-      id: 'system',
-      name: '🚨 SOS ALERT',
+      id: sosId,
+      name: '🚨 SOS BEACON',
       message: `⚠️ EMERGENCY: ${socket.data.name} triggered an SOS Beacon!`,
-      timestamp: Date.now(),
-      isSos: true
+      timestamp: now,
+      isSos: true,
+      sosId
     });
 
+    if (typeof callback === 'function') callback({ success: true, sosId });
+  });
+
+  // Member responds to active SOS ("I'm on it")
+  socket.on('sos-respond', (payload, callback) => {
+    const roomId = socket.data.roomId;
+    const { sosId } = payload || {};
+    if (socket.data.isPersistent && sosId) {
+      const updated = repo.addSosResponder(sosId, {
+        userId: socket.data.userId,
+        name: socket.data.name
+      });
+      if (updated) {
+        io.to(roomId).emit('sos-updated', updated);
+        io.to(roomId).emit('receive', {
+          id: 'system',
+          name: 'System',
+          message: `🛡️ ${socket.data.name} is on it!`,
+          timestamp: Date.now(),
+          isSystem: true
+        });
+      }
+    }
+    if (typeof callback === 'function') callback({ success: true });
+  });
+
+  // Sender cancels SOS ("False alarm")
+  socket.on('sos-cancel', (payload, callback) => {
+    const roomId = socket.data.roomId;
+    const { sosId } = payload || {};
+    if (socket.data.isPersistent && sosId) {
+      const cancelled = repo.cancelSosEvent(sosId, socket.data.userId);
+      if (cancelled) {
+        io.to(roomId).emit('sos-cancelled', {
+          sosId,
+          cancelledBy: socket.data.name
+        });
+        io.to(roomId).emit('receive', {
+          id: 'system',
+          name: 'System',
+          message: `✅ False alarm: SOS beacon cancelled by ${socket.data.name}.`,
+          timestamp: Date.now(),
+          isSystem: true
+        });
+      }
+    }
     if (typeof callback === 'function') callback({ success: true });
   });
 
@@ -711,9 +842,14 @@ io.on('connection', (socket) => {
       return;
     }
 
+    if (socket.data.isPersistent) {
+      locationSharingService.stopShare(socket.data.userId, 'stopped');
+    }
+
     const result = roomManager.stopLocation(roomId, socket.id);
     if (result && result.removed) {
-      socket.to(roomId).emit('location-stopped', { id: socket.id, name: socket.data.name });
+      socket.to(roomId).emit('location-stopped', { id: socket.id, name: socket.data.name, reason: 'stopped' });
+      socket.to(roomId).emit('location:stopped', { id: socket.id, name: socket.data.name, reason: 'stopped' });
       io.to(roomId).emit('participants-updated', roomManager.getParticipantList(roomId));
       console.log(`⏹ [Room ${roomId}] ${socket.data.name} stopped sharing location`);
     }
@@ -768,4 +904,4 @@ if (require.main === module) {
   server.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
 }
 
-module.exports = { app, server, roomManager, chatRateLimiter, locationRateLimiter, repo };
+module.exports = { app, server, roomManager, chatRateLimiter, locationRateLimiter, repo, locationSharingService };
