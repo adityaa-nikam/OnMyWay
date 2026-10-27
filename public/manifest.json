@@ -1,0 +1,21 @@
+{
+  "name": "OnMyWay",
+  "short_name": "OMW",
+  "description": "Private group chat and opt-in, time-limited live location sharing. Share until you arrive.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/chatLOGO.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/chatLOGO.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

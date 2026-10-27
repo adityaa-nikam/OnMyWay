@@ -4,22 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Confirm Sign In — OnMyWay (OMW)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 font-sans">
-  <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+<body class="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 antialiased selection:bg-neutral-200">
+  <div class="max-w-md w-full rounded-lg border border-border bg-card p-6 sm:p-8 shadow-sm">
     <div class="text-center mb-6">
-      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-3xl mb-3">
-        ⚡
+      <div class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border bg-muted mb-3">
+        <svg class="h-5 w-5 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
       </div>
-      <h1 class="text-2xl font-bold text-white tracking-tight">OnMyWay (OMW)</h1>
-      <p class="text-xs text-slate-400 mt-1">Share until you arrive.</p>
+      <h1 class="text-2xl font-semibold tracking-tight text-foreground">Confirm Sign In</h1>
+      <p class="text-xs text-muted-foreground mt-1">OnMyWay · Share until you arrive.</p>
     </div>
 
     <% if (valid) { %>
-      <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 mb-6 text-center">
-        <p class="text-sm text-slate-300 mb-1">Confirming sign-in for:</p>
-        <p class="text-sm font-semibold text-sky-400 font-mono"><%= email %></p>
+      <div class="rounded-lg border border-border bg-muted/40 p-5 mb-6 text-center">
+        <p class="text-xs text-muted-foreground mb-1">Confirming sign-in for:</p>
+        <p class="text-sm font-semibold text-foreground font-mono"><%= email %></p>
       </div>
 
       <form method="POST" action="/auth/verify">
@@ -27,21 +31,26 @@
         <input type="hidden" name="returnUrl" value="<%= returnUrl %>" />
 
         <button type="submit"
-                class="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm shadow-lg shadow-sky-600/20 transition active:scale-[0.98]">
-          Sign In to OnMyWay →
+                class="inline-flex w-full h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+          Sign In to OnMyWay
         </button>
       </form>
-      <p class="text-[11px] text-slate-500 text-center mt-4">
-        🛡️ Protected against automated email link scanners. Token will be verified upon click.
+      <p class="text-[11px] text-muted-foreground text-center mt-4">
+        Protected against automated email scanners. Token will be verified upon click.
       </p>
     <% } else { %>
-      <div class="bg-red-950/40 border border-red-800/60 rounded-xl p-5 mb-6 text-center">
-        <div class="text-2xl mb-2">❌</div>
-        <p class="text-sm font-semibold text-red-300"><%= error %></p>
+      <div class="rounded-lg border border-border bg-muted/60 p-5 mb-6 text-center">
+        <div class="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-muted border border-border">
+          <svg class="h-4 w-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
+        <p class="text-sm font-medium text-foreground"><%= error %></p>
       </div>
 
       <div class="text-center">
-        <a href="/login" class="inline-block py-2.5 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium transition">
+        <a href="/login" class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
           Request a New Sign-In Link
         </a>
       </div>

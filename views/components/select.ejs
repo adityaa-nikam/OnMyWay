@@ -20,7 +20,7 @@
   const classes = "flex h-9 w-full appearance-none items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-subtle placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pr-8 relative cursor-pointer " + extra;
 %>
 <div class="relative w-full">
-  <select <%- selId %> <%- selName %> class="<%= classes %>" <%= isDis %> <%- rawAttrs %>>
+  <select <%- selId %> <%- selName %> class="<%= classes %>" <%= isDis %> aria-label="<%= typeof ariaLabel !== 'undefined' ? ariaLabel : (typeof label !== 'undefined' ? label : 'Select option') %>" <%- rawAttrs %>>
     <% optList.forEach((opt) => { %>
       <option value="<%= opt.value %>" <%= opt.selected ? 'selected' : '' %>>
         <%= opt.label %>

@@ -12,7 +12,7 @@
   const extra = typeof className !== 'undefined' ? className : '';
 %>
 <div class="relative overflow-hidden rounded-md border border-border <%= h %> <%= extra %>">
-  <div class="h-full w-full overflow-y-auto p-4 pr-3.5 focus-visible:outline-none">
+  <div tabindex="0" aria-label="Scrollable content" class="h-full w-full overflow-y-auto p-4 pr-3.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
     <%- scrollContent %>
   </div>
 </div>

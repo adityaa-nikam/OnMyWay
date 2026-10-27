@@ -102,33 +102,34 @@ if (omwConfig && omwConfig.isPersistentGroup && omwConfig.groupId) {
 // --------------------------------------------------------------------------
 const map = L.map("map", { zoomControl: true }).setView([20, 0], 2);
 
-// High-performance dark map layer using OpenStreetMap + CSS filter (zero API key required)
-const darkTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+// Desaturated Light Map Layer (Carto Positron / OpenStreetMap)
+const cartoLightTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  maxZoom: 20,
+  subdomains: "abcd",
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+});
+
+// Desaturated OpenStreetMap fallback layer with CSS filter
+const desaturatedOsmTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution: "© OpenStreetMap contributors",
-  className: "leaflet-dark-tiles"
+  className: "leaflet-desaturated-tiles"
 });
 
-// Standard OpenStreetMap (Light theme fallback)
-const osmTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19,
-  attribution: "© OpenStreetMap contributors"
-});
-
-let isDarkMap = true;
-darkTileLayer.addTo(map);
+let isCartoLight = true;
+cartoLightTileLayer.addTo(map);
 
 function toggleMapTiles() {
-  if (isDarkMap) {
-    map.removeLayer(darkTileLayer);
-    osmTileLayer.addTo(map);
-    isDarkMap = false;
-    btnTileToggle.textContent = "🌙 Dark Map";
+  if (isCartoLight) {
+    map.removeLayer(cartoLightTileLayer);
+    desaturatedOsmTileLayer.addTo(map);
+    isCartoLight = false;
+    if (btnTileToggle) btnTileToggle.textContent = "OSM Style";
   } else {
-    map.removeLayer(osmTileLayer);
-    darkTileLayer.addTo(map);
-    isDarkMap = true;
-    btnTileToggle.textContent = "☀️ Light Map";
+    map.removeLayer(desaturatedOsmTileLayer);
+    cartoLightTileLayer.addTo(map);
+    isCartoLight = true;
+    if (btnTileToggle) btnTileToggle.textContent = "Clean Style";
   }
 }
 window.toggleMapTiles = toggleMapTiles;
@@ -199,21 +200,38 @@ function showProximityToast(text) {
 // --------------------------------------------------------------------------
 // Custom Zenly-Style Glowing Avatar Markers
 // --------------------------------------------------------------------------
-function createZenlyMarkerIcon(displayName, isSelf, isSos) {
+function createZenlyMarkerIcon(displayName, isSelf, isSos, isStale = false) {
   const initial = (displayName || "U").trim().charAt(0).toUpperCase();
-  const classes = `zenly-avatar-marker ${isSelf ? "self" : ""} ${isSos ? "sos" : ""}`;
+  const safeName = (displayName || "User").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  if (isStale) {
+    return L.divIcon({
+      className: "omw-custom-icon",
+      html: `
+        <div class="omw-stale-marker" title="${safeName}">
+          <div class="omw-stale-ring"></div>
+          <div class="omw-avatar-hover">${initial}</div>
+        </div>
+      `,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+      popupAnchor: [0, -14]
+    });
+  }
+
   const html = `
-    <div class="${classes}">
-      <div class="zenly-pulse"></div>
-      <div class="zenly-disc">${initial}</div>
+    <div class="omw-live-marker ${isSelf ? "self" : ""} ${isSos ? "sos" : ""}" title="${safeName}">
+      <div class="omw-live-pulse"></div>
+      <div class="omw-live-dot"></div>
+      <div class="omw-avatar-hover">${initial}</div>
     </div>
   `;
   return L.divIcon({
-    className: "zenly-custom-icon",
+    className: "omw-custom-icon",
     html,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -20]
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -14]
   });
 }
 
@@ -509,6 +527,9 @@ window.sendActionChip = sendStatusChip; // Backwards-compatible alias
 
 function appendChatMessage(sender, text, timestamp, type, isChip) {
   if (!chatMessagesEl) return;
+
+  const emptyState = document.getElementById("chat-empty-state");
+  if (emptyState) emptyState.style.display = "none";
 
   const bubble = document.createElement("div");
   bubble.className = `msg-bubble ${type} ${isChip ? "chip" : ""}`;
@@ -1456,13 +1477,23 @@ function checkStaleMarkers() {
     if (markers.has(id)) {
       const marker = markers.get(id);
       const isStale = (now - loc.updatedAt) > STALE_THRESHOLD_MS;
-      const markerEl = marker.getElement();
-      if (markerEl) {
-        if (isStale) {
-          markerEl.classList.add("stale-marker");
-        } else {
-          markerEl.classList.remove("stale-marker");
-        }
+      if (isStale) {
+        marker.setIcon(createZenlyMarkerIcon(loc.name, id === socket.id, false, true));
+      } else {
+        marker.setIcon(createZenlyMarkerIcon(loc.name, id === socket.id, false, false));
+      }
+    }
+  });
+
+  // Also update participant list badges for stale sharers
+  document.querySelectorAll(".participant-item").forEach((item) => {
+    const dot = item.querySelector(".avatar-dot");
+    if (dot && dot.classList.contains("active-sharer")) {
+      const liveBtn = item.querySelector(".live-badge");
+      if (liveBtn && dot.dataset.stale === "true") {
+        dot.className = "avatar-dot stale-sharer";
+        liveBtn.textContent = "Paused";
+        liveBtn.title = "Location paused";
       }
     }
   });

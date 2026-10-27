@@ -4,106 +4,243 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OnMyWay (OMW) — Share until you arrive</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="description" content="Private group chat and opt-in, time-limited live location sharing that automatically stops when you arrive." />
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-slate-100 p-4 font-sans">
-  <div class="max-w-xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
-    <!-- Header & Brand -->
-    <div class="text-center mb-6">
-      <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 text-2xl mb-2">
-        ⚡
-      </div>
-      <h1 class="text-3xl font-extrabold tracking-tight flex items-center justify-center gap-2 text-white">
-        <span>OnMyWay</span>
-        <span class="text-sky-400 font-mono text-xl">(OMW)</span>
-      </h1>
-      <p class="text-slate-400 text-sm mt-1 font-medium">
-        Share until you arrive.
-      </p>
-    </div>
-
-    <!-- Account & Persistent Groups Entry Point -->
-    <div class="mb-6 p-4 rounded-xl bg-sky-950/30 border border-sky-800/40 flex items-center justify-between gap-3">
-      <div>
-        <h3 class="text-xs font-bold text-sky-300 uppercase tracking-wider">Account-Based Groups</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Persistent group coordination, member management & message history</p>
-      </div>
-      <a href="/groups" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition shrink-0 shadow-lg shadow-sky-600/20">
-        Sign In / Groups →
-      </a>
-    </div>
-
-    <!-- Ephemeral Guest Mode Banner -->
-    <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
-      <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">⚡ Ephemeral Guest Mode</span>
-      <span class="text-[11px] text-slate-500 font-medium">Zero database storage</span>
-    </div>
-
-    <!-- Active / Detected Room State -->
-    <div id="room-active-box" class="hidden mb-6 p-4 rounded-xl bg-slate-800/80 border border-slate-700">
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-xs uppercase font-semibold tracking-wider text-emerald-400">● Active Guest Room</span>
-        <span id="room-badge" class="text-xs font-mono bg-slate-950 px-2 py-1 rounded text-slate-300"></span>
-      </div>
-      <p class="text-xs text-slate-400 mb-3">Share this invite link with your group:</p>
-      <div class="flex gap-2 mb-4">
-        <input id="invite-link-input" type="text" readonly
-               class="flex-1 bg-slate-950 border border-slate-700 px-3 py-2 rounded-lg text-xs font-mono text-slate-300 select-all outline-none" />
-        <button id="copy-btn" onclick="copyInvite()"
-                class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs font-medium transition">
-          Copy
-        </button>
-      </div>
-
-      <a id="btn-enter-room" href="#"
-         class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-base font-bold shadow-lg transition mb-3">
-        🚀 Enter Workspace (Chat & Live Map)
-      </a>
-
-      <div class="grid grid-cols-2 gap-3">
-        <a id="btn-enter-chat" href="#"
-           class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-medium transition">
-          💬 Chat Only
-        </a>
-        <a id="btn-enter-location" href="#"
-           class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-medium transition">
-          📍 Map Only
-        </a>
-      </div>
-    </div>
-
-    <!-- Action Section: Create Room or Join -->
-    <div id="room-actions" class="space-y-4">
-      <button id="create-room-btn" onclick="createNewRoom()"
-              class="w-full bg-slate-100 hover:bg-white text-slate-950 py-3 rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 flex items-center justify-center gap-2">
-        🔒 Start Quick Ephemeral Guest Room
-      </button>
-
-      <div class="relative flex py-2 items-center">
-        <div class="flex-grow border-t border-slate-800"></div>
-        <span class="flex-shrink mx-4 text-xs uppercase tracking-widest text-slate-500 font-semibold">Or join guest room</span>
-        <div class="flex-grow border-t border-slate-800"></div>
-      </div>
-
-      <form id="join-form" onsubmit="handleJoinSubmit(event)" class="space-y-3">
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Guest Room Invite Link or URL</label>
-          <input id="join-input" type="text" placeholder="Paste invite link or ?roomId=...&token=..."
-                 class="w-full bg-slate-950 border border-slate-800 focus:border-slate-600 px-4 py-2.5 rounded-xl text-sm text-white placeholder-slate-600 outline-none transition" />
+<body class="min-h-screen bg-background text-foreground flex flex-col font-sans antialiased selection:bg-neutral-200">
+  <!-- Minimal Top Navigation -->
+  <header class="w-full border-b border-border bg-background/95 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-md border border-border bg-muted flex items-center justify-center">
+          <svg class="h-4 w-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
         </div>
-        <button type="submit"
-                class="w-full bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl font-semibold text-sm transition">
-          Join Guest Room
-        </button>
-      </form>
+        <span class="text-sm font-semibold tracking-tight text-foreground">OnMyWay</span>
+      </a>
+
+      <div class="flex items-center gap-3">
+        <a href="#guest-mode" class="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-block">
+          Guest Mode
+        </a>
+        <a href="/groups" class="inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground shadow transition-colors hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+          Sign In / Groups
+        </a>
+      </div>
     </div>
+  </header>
 
-    <div id="status-msg" class="hidden mt-4 p-3 rounded-lg text-xs text-center"></div>
+  <main class="flex-1">
+    <!-- Hero Section -->
+    <section class="max-w-4xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
+      <div class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3 py-1 text-xs text-muted-foreground mb-8">
+        <span class="h-1.5 w-1.5 rounded-full bg-foreground"></span>
+        Zero surveillance · Automatic stop on arrival
+      </div>
+      
+      <h1 class="text-4xl sm:text-6xl font-semibold tracking-tight text-foreground max-w-2xl mx-auto leading-[1.1]">
+        Share until you arrive.
+      </h1>
+      
+      <p class="mt-6 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto font-normal leading-relaxed">
+        Private group coordination and live location sharing that turns itself off when you reach your destination. No tracking trails, no background snooping.
+      </p>
 
-    <p class="text-slate-600 text-center mt-6 text-xs tracking-wide">
-      OnMyWay (OMW) · Room-Isolated Real-Time Sharing & Following · Timing-Safe Security
-    </p>
-  </div>
+      <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="/groups" class="w-full sm:w-auto inline-flex h-11 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+          Get Started with Groups
+        </a>
+        <a href="#guest-mode" class="w-full sm:w-auto inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-6 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+          Quick Ephemeral Room
+        </a>
+      </div>
+    </section>
+
+    <!-- 3-Step How It Works -->
+    <section class="border-y border-border bg-muted/20 py-20">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6">
+        <div class="text-center mb-16">
+          <h2 class="text-2xl font-semibold tracking-tight text-foreground">How it works</h2>
+          <p class="text-sm text-muted-foreground mt-1">Calm, clear coordination in three simple steps.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <!-- Step 1 -->
+          <div class="rounded-lg border border-border bg-card p-6 shadow-sm">
+            <div class="text-xs font-mono font-semibold text-muted-foreground mb-3">01 / SET OFF</div>
+            <h3 class="text-base font-semibold text-foreground mb-2">Set off</h3>
+            <p class="text-xs text-muted-foreground leading-relaxed">
+              Choose your duration—15 minutes, 1 hour, or until you reach your meetup destination. You choose exactly which groups can see you.
+            </p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="rounded-lg border border-border bg-card p-6 shadow-sm">
+            <div class="text-xs font-mono font-semibold text-muted-foreground mb-3">02 / FOLLOWED</div>
+            <h3 class="text-base font-semibold text-foreground mb-2">Followed</h3>
+            <p class="text-xs text-muted-foreground leading-relaxed">
+              Your group sees a live dot with real-time ETA and automatic lateness notices. No perpetual surveillance—only active following while you commute.
+            </p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="rounded-lg border border-border bg-card p-6 shadow-sm">
+            <div class="text-xs font-mono font-semibold text-muted-foreground mb-3">03 / REACHED</div>
+            <h3 class="text-base font-semibold text-foreground mb-2">Reached</h3>
+            <p class="text-xs text-muted-foreground leading-relaxed">
+              The moment you step inside the geofence or your timer elapses, location sharing terminates immediately. Your coordinates vanish from memory.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Privacy Section -->
+    <section class="py-20 max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-2xl font-semibold tracking-tight text-foreground">Built for peace of mind</h2>
+        <p class="text-sm text-muted-foreground mt-1">Privacy guaranteed by code and cryptographic isolation.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+        <div class="space-y-2">
+          <div class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted mb-2">
+            <svg class="h-4 w-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <h3 class="text-sm font-semibold text-foreground">Off by default</h3>
+          <p class="text-xs text-muted-foreground leading-relaxed">
+            Your location is never tracked in the background without explicit initiation. You remain invisible until you hit Share.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted mb-2">
+            <svg class="h-4 w-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <h3 class="text-sm font-semibold text-foreground">Time-limited</h3>
+          <p class="text-xs text-muted-foreground leading-relaxed">
+            Every session enforces strict server-side boundaries. No forgotten active shares running indefinitely on remote servers.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted mb-2">
+            <svg class="h-4 w-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </div>
+          <h3 class="text-sm font-semibold text-foreground">Zero trails</h3>
+          <p class="text-xs text-muted-foreground leading-relaxed">
+            We store zero coordinate history. Once a share completes, past coordinates are discarded immediately with no breadcrumb logs.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ephemeral Guest Mode Section -->
+    <section id="guest-mode" class="border-t border-border bg-muted/10 py-16">
+      <div class="max-w-xl mx-auto px-4 sm:px-6">
+        <div class="rounded-lg border border-border bg-card p-6 sm:p-8 shadow-sm">
+          <div class="text-center mb-6">
+            <h2 class="text-lg font-semibold tracking-tight text-foreground">Ephemeral Guest Mode</h2>
+            <p class="text-xs text-muted-foreground mt-1">
+              Need a quick, anonymous room that leaves no trace in any database?
+            </p>
+          </div>
+
+          <!-- Active Room Detected State -->
+          <div id="room-active-box" class="hidden mb-6 p-4 rounded-md border border-border bg-muted/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full bg-foreground animate-pulse"></span>
+                Active Room
+              </span>
+              <span id="room-badge" class="text-xs font-mono bg-background border border-border px-2 py-0.5 rounded text-foreground"></span>
+            </div>
+            <p class="text-xs text-muted-foreground mb-3">Share this invite link with your group:</p>
+            <div class="flex gap-2 mb-4">
+              <input id="invite-link-input" type="text" readonly
+                     class="flex-1 h-8 bg-background border border-input px-3 rounded-md text-xs font-mono text-foreground select-all outline-none" />
+              <button id="copy-btn"
+                      class="h-8 px-3 rounded-md border border-input bg-background hover:bg-accent text-foreground text-xs font-medium transition-colors">
+                Copy
+              </button>
+            </div>
+
+            <a id="btn-enter-room" href="#"
+               class="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-neutral-800 h-9 rounded-md text-xs font-medium shadow transition-colors mb-2">
+              Enter Workspace (Chat & Live Map)
+            </a>
+
+            <div class="grid grid-cols-2 gap-2">
+              <a id="btn-enter-chat" href="#"
+                 class="flex items-center justify-center gap-1.5 h-8 border border-input bg-background hover:bg-accent text-xs font-medium rounded-md transition-colors">
+                Chat Only
+              </a>
+              <a id="btn-enter-location" href="#"
+                 class="flex items-center justify-center gap-1.5 h-8 border border-input bg-background hover:bg-accent text-xs font-medium rounded-md transition-colors">
+                Map Only
+              </a>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="space-y-4">
+            <button id="create-room-btn"
+                    class="w-full h-9 rounded-md bg-primary text-primary-foreground hover:bg-neutral-800 text-xs font-medium shadow transition-colors">
+              Start Quick Ephemeral Room
+            </button>
+
+            <div class="relative flex py-1 items-center">
+              <div class="flex-grow border-t border-border"></div>
+              <span class="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">or join existing</span>
+              <div class="flex-grow border-t border-border"></div>
+            </div>
+
+            <form id="join-form" class="space-y-3">
+              <div>
+                <label class="block text-xs font-medium text-foreground mb-1.5">Invite Link or Code</label>
+                <input id="join-input" type="text" placeholder="Paste invite link or roomId..."
+                       class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+              </div>
+              <button type="submit"
+                      class="w-full h-9 rounded-md border border-input bg-background hover:bg-accent text-foreground text-xs font-medium transition-colors">
+                Join Guest Room
+              </button>
+            </form>
+          </div>
+
+          <div id="status-msg" class="hidden mt-4 p-3 rounded-md text-xs text-center border"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Minimal Monochrome Footer -->
+  <footer class="border-t border-border py-8 bg-background">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+      <div class="flex items-center gap-2">
+        <span class="font-medium text-foreground">OnMyWay (OMW)</span>
+        <span>·</span>
+        <span>Share until you arrive.</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="/groups" class="hover:text-foreground transition-colors">Groups</a>
+        <a href="/ui-kit" class="hover:text-foreground transition-colors">Design System</a>
+        <a href="#guest-mode" class="hover:text-foreground transition-colors">Guest Mode</a>
+      </div>
+    </div>
+  </footer>
 
   <script>
     const params = new URLSearchParams(window.location.search);
@@ -114,10 +251,10 @@
       showActiveRoom(existingRoomId, existingToken);
     }
 
-    async function createNewRoom() {
-      const btn = document.getElementById('create-room-btn');
+    document.getElementById('create-room-btn')?.addEventListener('click', async function() {
+      const btn = this;
       btn.disabled = true;
-      btn.textContent = 'Generating Secure Session...';
+      btn.textContent = 'Generating Room...';
       try {
         const res = await fetch('/api/rooms', { method: 'POST' });
         const data = await res.json();
@@ -131,40 +268,20 @@
         showMessage('Network error while creating room', 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = '🔒 Create New Private Room';
+        btn.textContent = 'Start Quick Ephemeral Room';
       }
-    }
+    });
 
-    function showActiveRoom(roomId, token) {
-      const activeBox = document.getElementById('room-active-box');
-      const badge = document.getElementById('room-badge');
-      const linkInput = document.getElementById('invite-link-input');
-      const roomBtn = document.getElementById('btn-enter-room');
-      const chatBtn = document.getElementById('btn-enter-chat');
-      const locBtn = document.getElementById('btn-enter-location');
-
-      const origin = window.location.origin;
-      const inviteUrl = `${origin}/room?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
-
-      badge.textContent = `ID: ${roomId}`;
-      linkInput.value = inviteUrl;
-      roomBtn.href = `/room?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
-      chatBtn.href = `/chat?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
-      locBtn.href = `/location?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
-
-      activeBox.classList.remove('hidden');
-    }
-
-    function copyInvite() {
+    document.getElementById('copy-btn')?.addEventListener('click', function() {
       const input = document.getElementById('invite-link-input');
       navigator.clipboard.writeText(input.value).then(() => {
         const btn = document.getElementById('copy-btn');
         btn.textContent = 'Copied!';
         setTimeout(() => btn.textContent = 'Copy', 2000);
       });
-    }
+    });
 
-    function handleJoinSubmit(e) {
+    document.getElementById('join-form')?.addEventListener('submit', function(e) {
       e.preventDefault();
       const raw = document.getElementById('join-input').value.trim();
       if (!raw) return;
@@ -176,7 +293,6 @@
         } else if (raw.startsWith('?')) {
           url = new URL(window.location.origin + '/' + raw);
         } else {
-          // Check if space separated or comma separated roomId and token
           const parts = raw.split(/[:\s,]+/);
           if (parts.length >= 2) {
             url = new URL(`${window.location.origin}/?roomId=${encodeURIComponent(parts[0])}&token=${encodeURIComponent(parts[1])}`);
@@ -197,13 +313,33 @@
       } catch (err) {
         showMessage('Invalid URL format', 'error');
       }
+    });
+
+    function showActiveRoom(roomId, token) {
+      const activeBox = document.getElementById('room-active-box');
+      const badge = document.getElementById('room-badge');
+      const linkInput = document.getElementById('invite-link-input');
+      const roomBtn = document.getElementById('btn-enter-room');
+      const chatBtn = document.getElementById('btn-enter-chat');
+      const locBtn = document.getElementById('btn-enter-location');
+
+      const origin = window.location.origin;
+      const inviteUrl = `${origin}/room?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
+
+      badge.textContent = `ID: ${roomId.slice(0, 8)}...`;
+      linkInput.value = inviteUrl;
+      roomBtn.href = `/room?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
+      chatBtn.href = `/chat?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
+      locBtn.href = `/location?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`;
+
+      activeBox.classList.remove('hidden');
     }
 
     function showMessage(msg, type) {
       const el = document.getElementById('status-msg');
       el.textContent = msg;
-      el.className = `mt-4 p-3 rounded-lg text-xs text-center ${
-        type === 'success' ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800' : 'bg-red-950/60 text-red-300 border border-red-800'
+      el.className = `mt-4 p-3 rounded-md text-xs text-center border ${
+        type === 'success' ? 'bg-muted/40 text-foreground border-border' : 'bg-destructive/10 text-destructive border-destructive/20'
       }`;
       el.classList.remove('hidden');
     }

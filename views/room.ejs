@@ -2,12 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title><%= typeof group !== 'undefined' ? group.name + ' — OnMyWay (OMW)' : 'OnMyWay (OMW) — Share until you arrive' %></title>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/css/app.css" />
   <link rel="stylesheet" href="/CSS/room.css?v=<%= Date.now() %>" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -22,32 +25,39 @@
   <script defer src="/socket.io/socket.io.js"></script>
   <script defer src="/JS/room.js?v=<%= Date.now() %>"></script>
 </head>
-<body class="theme-dark">
+<body class="bg-background text-foreground antialiased selection:bg-neutral-200">
   <!-- Top Navigation Header -->
   <header class="app-header">
     <div class="header-left">
       <a href="<%= typeof isPersistentGroup !== 'undefined' && isPersistentGroup ? '/groups' : '/' %>" class="brand-link" title="Return to home">
-        <span class="brand-icon">⚡</span>
-        <span class="brand-title">OnMyWay <span class="brand-subtitle">(OMW)</span></span>
+        <span class="brand-icon">
+          <svg class="h-4 w-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </span>
+        <span class="brand-title">OnMyWay</span>
       </a>
 
       <% if (typeof isPersistentGroup !== 'undefined' && isPersistentGroup) { %>
         <div class="room-pill group-pill">
-          <span class="room-label">GROUP:</span>
-          <span class="room-id font-mono"><%= group.name %></span>
+          <span class="room-label">GROUP</span>
+          <span class="room-id"><%= group.name %></span>
           <button id="group-invite-btn" class="icon-btn" title="Create Invite Link" onclick="openInviteModal()">
-            🔗 <span class="btn-text">Invite</span>
+            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span class="btn-text">Invite</span>
           </button>
           <button id="group-meetups-btn" class="icon-btn" title="Group Meetups & ETAs" onclick="openMeetupsModal()">
-            🎯 <span class="btn-text">Meetups</span>
+            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span class="btn-text">Meetups</span>
           </button>
         </div>
       <% } else { %>
         <div class="room-pill">
-          <span class="room-label">GUEST:</span>
-          <span id="header-room-id" class="room-id font-mono">Loading...</span>
+          <span class="room-label">GUEST</span>
+          <span id="header-room-id" class="room-id">Loading...</span>
           <button id="copy-invite-btn" class="icon-btn" title="Copy Invite Link" onclick="copyInviteLink()">
-            📋 <span class="btn-text">Copy Link</span>
+            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span class="btn-text">Copy Link</span>
           </button>
         </div>
       <% } %>
@@ -64,36 +74,75 @@
     </div>
   </header>
 
-  <!-- Mobile View Switcher (Visible only on small screens) -->
-  <nav class="mobile-tabs" aria-label="Mobile View Switcher">
-    <button id="tab-btn-map" class="tab-btn active" onclick="switchMobileTab('map')">
-      📍 Map & GPS (<span id="mobile-sharer-count">0</span>)
-    </button>
-    <button id="tab-btn-chat" class="tab-btn" onclick="switchMobileTab('chat')">
-      💬 Chat
-    </button>
-    <button id="tab-btn-members" class="tab-btn" onclick="switchMobileTab('members')">
-      👥 People (<span id="mobile-member-count">0</span>)
-    </button>
-  </nav>
-
-  <!-- Main Workspace Layout -->
+  <!-- Main Workspace Layout: Desktop Three-Pane (people | chat | map) -->
   <main class="workspace-container">
-    <!-- Left Panel: Participants & Presence Sidebar -->
+    <!-- Left Pane: Participants & Presence Sidebar (people) -->
     <aside id="panel-members" class="sidebar-panel">
       <div class="panel-header">
-        <h3>Participants</h3>
+        <h3 class="panel-title">People</h3>
         <span id="sidebar-member-count" class="badge">0</span>
       </div>
       <ul id="participant-list" class="participant-list" aria-label="Room Participants">
-        <!-- Dynamically populated safely with textContent -->
+        <!-- Loading Skeleton initial state -->
+        <li class="participant-skeleton">
+          <span class="skeleton-dot animate-pulse"></span>
+          <span class="skeleton-text animate-pulse"></span>
+        </li>
+        <li class="participant-skeleton">
+          <span class="skeleton-dot animate-pulse"></span>
+          <span class="skeleton-text animate-pulse"></span>
+        </li>
       </ul>
       <div class="sidebar-footer">
-        <span class="text-muted text-xs">Room isolated & crypto secured</span>
+        <span class="footer-muted">End-to-end room isolated</span>
       </div>
     </aside>
 
-    <!-- Center/Right Panel: Interactive Leaflet Map -->
+    <!-- Center Pane: Integrated Chat Feed (chat) -->
+    <section id="panel-chat" class="chat-panel">
+      <div class="panel-header chat-header">
+        <h3 class="panel-title">Chat</h3>
+        <span id="chat-status-indicator" class="panel-subtitle">Room-isolated</span>
+      </div>
+
+      <!-- Message History Container -->
+      <div id="chat-messages" class="chat-messages" role="log" aria-live="polite">
+        <!-- Messages populated safely via textContent -->
+        <div id="chat-empty-state" class="chat-empty-state">
+          <div class="empty-icon-wrap">
+            <svg class="h-5 w-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <p class="empty-title">No messages yet</p>
+          <p class="empty-desc">Send a message or share an ETA chip with your group.</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Status Chips (Calm monochrome voice, outline badges) -->
+      <div class="chat-chips-container">
+        <div class="chat-chips-scroll" aria-label="Status Chips">
+          <button type="button" class="action-chip" onclick="sendStatusChip('On my way', 'on_my_way')">🚗 On my way</button>
+          <button type="button" class="action-chip" onclick="sendStatusChip('Running late', 'running_late')">⏳ Running late</button>
+          <button type="button" class="action-chip" onclick="sendStatusChip('Reached safe', 'reached_safe')">🏡 Reached safe</button>
+          <button type="button" class="action-chip chip-sos" onclick="sendStatusChip('Need help', 'need_help')">🆘 Need help</button>
+        </div>
+        <div class="chip-attach-bar">
+          <label class="chip-attach-toggle">
+            <input type="checkbox" id="attach-location-toggle" class="chip-checkbox" />
+            <span>Attach my location pin</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Message Input Form -->
+      <form id="chat-form" class="chat-input-bar" onsubmit="handleSendMessage(event)">
+        <input id="chat-input" type="text" placeholder="Type a message..." maxlength="2000" autocomplete="off" />
+        <button type="submit" id="chat-send-btn" class="send-btn" aria-label="Send Message">
+          Send
+        </button>
+      </form>
+    </section>
+
+    <!-- Right Pane: Interactive Desaturated Leaflet Map (map) -->
     <section id="panel-map" class="map-panel">
       <!-- Error / Permission Alert Banner -->
       <div id="geo-error-banner" class="geo-banner hidden">
@@ -101,38 +150,40 @@
         <button class="banner-close" onclick="dismissGeoError()">✕</button>
       </div>
 
-      <!-- Map Overlay Controls -->
+      <!-- Map Floating Overlay Controls -->
       <div class="map-controls-bar">
+        <!-- Persistent Sharing Pill: "Sharing with N people until HH:MM" with Extend and Stop -->
         <div id="sharing-pill" class="sharing-status-pill hidden">
-          <span class="live-dot"></span>
+          <span class="live-dot-pulse"></span>
           <span id="live-status-text" class="live-text">Live GPS Active</span>
           <span id="share-countdown" class="share-countdown">15:00</span>
           <button id="btn-extend-share" class="btn-pill-extend" onclick="extendActiveShare()" title="Add 15 minutes">+15m</button>
-          <button id="btn-stop-pill" class="btn-pill-stop" onclick="stopLocationSharing()" title="Stop sharing location">✕</button>
+          <button id="btn-stop-pill" class="btn-pill-stop" onclick="stopLocationSharing()" title="Stop sharing location">Stop</button>
         </div>
 
         <button id="btn-start-location" class="ctrl-btn btn-share" onclick="openShareSetupModal()">
-          📍 Share My Location
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>
+          Share Location
         </button>
 
         <button id="btn-stop-location" class="ctrl-btn btn-stop hidden" onclick="stopLocationSharing()">
-          ⏹ Stop Sharing
+          Stop Sharing
         </button>
 
-        <button id="btn-share-log" class="ctrl-btn btn-share-log" onclick="openShareLogModal()" title="View Location Sharing History">
-          📋 Share Log
+        <button id="btn-share-log" class="ctrl-btn btn-secondary-ctrl" onclick="openShareLogModal()" title="View Location Sharing History">
+          Share Log
         </button>
 
-        <button id="btn-ghost-toggle" class="ctrl-btn btn-ghost" onclick="toggleGhostMode()" title="Toggle Ghost Mode (Fuzz location by ~300m)">
-          👻 Ghost: OFF
+        <button id="btn-ghost-toggle" class="ctrl-btn btn-secondary-ctrl" onclick="toggleGhostMode()" title="Toggle Ghost Mode (Fuzz location by ~300m)">
+          Ghost: OFF
         </button>
 
-        <button id="btn-set-meetup" class="ctrl-btn btn-meetup" onclick="toggleMeetingPointMode()" title="Click on map to drop a shared meeting point">
-          🎯 Meet Here
+        <button id="btn-set-meetup" class="ctrl-btn btn-secondary-ctrl" onclick="toggleMeetingPointMode()" title="Click on map to drop a shared meeting point">
+          Meet Here
         </button>
 
-        <button id="btn-recenter" class="ctrl-btn btn-recenter" onclick="recenterMap()" title="Center on my location">
-          🎯 Center On Me
+        <button id="btn-recenter" class="ctrl-btn btn-secondary-ctrl" onclick="recenterMap()" title="Center on my location">
+          Center Me
         </button>
 
         <!-- Emergency SOS Button with 3-Second Hold-to-Confirm & Radial Progress Ring -->
@@ -142,12 +193,12 @@
               <path class="sos-radial-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
               <path id="sos-radial-progress" class="sos-radial-progress" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
             </svg>
-            <span class="sos-label">🚨 Hold SOS</span>
+            <span class="sos-label">Hold SOS</span>
           </button>
         </div>
 
-        <button id="btn-tile-toggle" class="ctrl-btn btn-tile" onclick="toggleMapTiles()" title="Toggle Dark/Light Map Style">
-          ☀️ Light Map
+        <button id="btn-tile-toggle" class="ctrl-btn btn-secondary-ctrl" onclick="toggleMapTiles()" title="Toggle Clean/OSM Tiles">
+          Map Style
         </button>
       </div>
 
@@ -167,80 +218,58 @@
       <!-- Emergency SOS Banner (Interactive with 'I'm on it' and 'False alarm') -->
       <div id="sos-alert-banner" class="sos-banner hidden">
         <div class="sos-content">
-          <span class="sos-icon">🚨</span>
+          <span class="sos-icon">⚠️</span>
           <div class="sos-details">
             <span id="sos-alert-text" class="sos-text">EMERGENCY: Participant triggered SOS Beacon!</span>
             <div id="sos-responders-list" class="sos-responders-text"></div>
           </div>
         </div>
         <div class="sos-banner-actions">
-          <button id="btn-sos-respond" class="btn-sos-action btn-on-it" onclick="respondToActiveSos()">🛡️ I'm on it</button>
-          <button id="btn-sos-cancel" class="btn-sos-action btn-false-alarm hidden" onclick="cancelActiveSos()">✅ False alarm</button>
+          <button id="btn-sos-respond" class="btn-sos-action btn-on-it" onclick="respondToActiveSos()">I'm on it</button>
+          <button id="btn-sos-cancel" class="btn-sos-action btn-false-alarm hidden" onclick="cancelActiveSos()">False alarm</button>
           <button class="sos-close" onclick="dismissSosBanner()">✕</button>
         </div>
       </div>
 
       <!-- Proximity Toast Notification -->
       <div id="proximity-toast" class="proximity-toast hidden">
-        <span class="proximity-icon">🎉</span>
-        <span id="proximity-toast-text" class="proximity-text">You and a friend are close!</span>
+        <span class="proximity-icon">📍</span>
+        <span id="proximity-toast-text" class="proximity-text">A member is within 100 meters.</span>
       </div>
 
       <!-- Leaflet Map Container -->
       <div id="map"></div>
     </section>
-
-    <!-- Right Panel: Integrated Chat Feed -->
-    <section id="panel-chat" class="chat-panel">
-      <div class="panel-header chat-header">
-        <h3>Group Chat</h3>
-        <span id="chat-status-indicator" class="text-xs text-muted">Room-isolated</span>
-      </div>
-
-      <!-- Message History Container -->
-      <div id="chat-messages" class="chat-messages" role="log" aria-live="polite">
-        <!-- Message bubbles populated safely via textContent -->
-      </div>
-
-      <!-- Quick Action Status Chips (Calm voice, opt-in location pin) -->
-      <div class="chat-chips-container">
-        <div class="chat-chips-scroll" aria-label="Status Chips">
-          <button type="button" class="action-chip" onclick="sendStatusChip('On my way', 'on_my_way')">🚗 On my way</button>
-          <button type="button" class="action-chip" onclick="sendStatusChip('Running late', 'running_late')">⏳ Running late</button>
-          <button type="button" class="action-chip" onclick="sendStatusChip('Reached safe', 'reached_safe')">🏡 Reached safe</button>
-          <button type="button" class="action-chip danger" onclick="sendStatusChip('Need help', 'need_help')">🆘 Need help</button>
-        </div>
-        <div class="chip-attach-bar">
-          <label class="chip-attach-toggle">
-            <input type="checkbox" id="attach-location-toggle" />
-            <span>Attach my location pin (24h retention)</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Message Input Form -->
-      <form id="chat-form" class="chat-input-bar" onsubmit="handleSendMessage(event)">
-        <input id="chat-input" type="text" placeholder="Type a message..." maxlength="2000" autocomplete="off" />
-        <button type="submit" id="chat-send-btn" class="send-btn" aria-label="Send Message">
-          Send
-        </button>
-      </form>
-    </section>
   </main>
+
+  <!-- Mobile Bottom Tab Bar with Safe-Area Insets (Chat / Map / People) -->
+  <nav class="mobile-bottom-tabs" aria-label="Mobile View Switcher">
+    <button id="tab-btn-chat" class="tab-btn" onclick="switchMobileTab('chat')">
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Chat</span>
+    </button>
+    <button id="tab-btn-map" class="tab-btn active" onclick="switchMobileTab('map')">
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>
+      <span>Map (<span id="mobile-sharer-count">0</span>)</span>
+    </button>
+    <button id="tab-btn-members" class="tab-btn" onclick="switchMobileTab('members')">
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>People (<span id="mobile-member-count">0</span>)</span>
+    </button>
+  </nav>
 
   <!-- Join Room / Display Name Modal -->
   <div id="join-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <span class="modal-icon">👋</span>
-        <h2>Join Private Room</h2>
+        <h2 class="text-base font-semibold text-foreground">Join Private Room</h2>
         <p class="modal-subtitle">Enter your display name to enter the coordination workspace</p>
       </div>
-      <form id="join-room-form" onsubmit="handleJoinModalSubmit(event)">
+      <form id="join-room-form" onsubmit="handleJoinModalSubmit(event)" class="space-y-4">
         <div class="form-group">
-          <label for="display-name-input">Display Name</label>
-          <input id="display-name-input" type="text" placeholder="e.g. Alex" maxlength="30" required autofocus autocomplete="nickname" />
-          <span class="field-hint">Max 30 characters. Duplicate names will automatically be disambiguated.</span>
+          <label for="display-name-input" class="block text-xs font-medium text-foreground mb-1.5">Display Name</label>
+          <input id="display-name-input" type="text" placeholder="e.g. Alex" maxlength="30" required autofocus autocomplete="nickname" class="form-input" />
+          <span class="field-hint">Max 30 characters. Duplicate names are disambiguated.</span>
         </div>
         <div id="join-error-msg" class="modal-error hidden"></div>
         <button type="submit" id="btn-submit-join" class="btn-primary-large">
@@ -253,12 +282,11 @@
   <!-- Invalid Invitation Error Modal -->
   <div id="invalid-room-modal" class="modal-overlay hidden">
     <div class="modal-card text-center">
-      <div class="modal-icon text-danger">⚠️</div>
-      <h2 id="invalid-title">Invalid Invitation</h2>
-      <p id="invalid-description" class="modal-subtitle">
+      <h2 id="invalid-title" class="text-base font-semibold text-foreground mb-1">Invalid Invitation</h2>
+      <p id="invalid-description" class="modal-subtitle mb-4">
         This room does not exist, has expired, or the invitation token is invalid.
       </p>
-      <a href="/" class="btn-primary-large inline-block">Return to Home</a>
+      <a href="/" class="btn-primary-large inline-flex items-center justify-center">Return to Home</a>
     </div>
   </div>
 
@@ -266,13 +294,12 @@
   <div id="invite-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <span class="modal-icon">🔗</span>
-        <h2>Invite to Group</h2>
+        <h2 class="text-base font-semibold text-foreground">Invite to Group</h2>
         <p class="modal-subtitle">Generate a secure invitation link for your group</p>
       </div>
 
-      <div class="form-group">
-        <label for="invite-hours-select">Link Expiration</label>
+      <div class="form-group mb-3">
+        <label for="invite-hours-select" class="block text-xs font-medium text-foreground mb-1.5">Link Expiration</label>
         <select id="invite-hours-select" class="form-input">
           <option value="24" selected>Expires in 24 hours</option>
           <option value="72">Expires in 3 days</option>
@@ -281,85 +308,79 @@
         </select>
       </div>
 
-      <div class="form-group">
-        <label for="invite-max-uses">Max Uses (Optional)</label>
+      <div class="form-group mb-4">
+        <label for="invite-max-uses" class="block text-xs font-medium text-foreground mb-1.5">Max Uses (Optional)</label>
         <input id="invite-max-uses" type="number" min="1" max="1000" placeholder="Unlimited uses if empty" class="form-input" />
       </div>
 
-      <div id="generated-invite-box" class="hidden" style="margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-        <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 6px;">Your Invitation Link:</label>
-        <div style="display: flex; gap: 6px;">
-          <input id="generated-invite-input" type="text" readonly style="flex: 1; background: #0b1120; border: 1px solid rgba(255,255,255,0.15); color: #38bdf8; padding: 6px 10px; border-radius: 6px; font-family: monospace; font-size: 0.8rem;" />
-          <button id="copy-generated-invite-btn" onclick="copyGeneratedInvite()" class="icon-btn" style="padding: 6px 12px;">Copy</button>
+      <div id="generated-invite-box" class="hidden mb-4 p-3 rounded-md border border-border bg-muted/30">
+        <label class="block text-[11px] text-muted-foreground mb-1.5">Your Invitation Link:</label>
+        <div class="flex gap-2">
+          <input id="generated-invite-input" type="text" readonly class="form-input font-mono text-xs flex-1" />
+          <button id="copy-generated-invite-btn" onclick="copyGeneratedInvite()" class="icon-btn shrink-0">Copy</button>
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
-        <button type="button" onclick="closeInviteModal()" class="action-sm" style="padding: 8px 16px;">Close</button>
-        <button type="button" id="btn-create-invite" onclick="handleCreateInvite()" class="btn-primary-large" style="width: auto; padding: 8px 20px; font-size: 0.85rem;">Generate Link</button>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeInviteModal()" class="action-sm">Close</button>
+        <button type="button" id="btn-create-invite" onclick="handleCreateInvite()" class="btn-primary-large" style="width: auto;">Generate Link</button>
       </div>
     </div>
   </div>
 
-  <!-- Time-Boxed Share Setup Modal -->
+  <!-- Time-Boxed Share Setup Modal: Segmented Control & Audience -->
   <div id="share-setup-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <span class="modal-icon">📍</span>
-        <h2>Share My Location</h2>
-        <p class="modal-subtitle">Pick how long to share and choose your audience</p>
+        <h2 class="text-base font-semibold text-foreground">Share My Location</h2>
+        <p class="modal-subtitle">Pick how long to share and choose who can see you</p>
       </div>
 
-      <!-- Duration Selection -->
-      <div class="form-group">
-        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Duration</label>
-        <div class="duration-grid">
-          <label class="duration-card">
+      <!-- Duration Selection as a Segmented Control -->
+      <div class="form-group mb-4">
+        <label class="block text-xs font-medium text-foreground mb-2">Duration</label>
+        <div class="segmented-control" role="radiogroup" aria-label="Duration picker">
+          <label class="segmented-item">
             <input type="radio" name="share-duration" value="15m" checked onchange="handleDurationChange('15m')" />
-            <span class="duration-badge">⏱️ 15 min</span>
-            <span class="duration-desc">Quick errand</span>
+            <span>15 min</span>
           </label>
-          <label class="duration-card">
+          <label class="segmented-item">
             <input type="radio" name="share-duration" value="1h" onchange="handleDurationChange('1h')" />
-            <span class="duration-badge">⏳ 1 hour</span>
-            <span class="duration-desc">Commute or trip</span>
+            <span>1 hour</span>
           </label>
-          <label class="duration-card">
+          <label class="segmented-item">
             <input type="radio" name="share-duration" value="8h" onchange="handleDurationChange('8h')" />
-            <span class="duration-badge">🏔️ 8 hours</span>
-            <span class="duration-desc">Day hike or work</span>
+            <span>8 hours</span>
           </label>
-          <label class="duration-card">
+          <label class="segmented-item">
             <input type="radio" name="share-duration" value="until_arrive" onchange="handleDurationChange('until_arrive')" />
-            <span class="duration-badge">🎯 Until I arrive</span>
-            <span class="duration-desc">Stops at destination</span>
+            <span>Until arrival</span>
           </label>
-          <label class="duration-card">
+          <label class="segmented-item">
             <input type="radio" name="share-duration" value="until_stop" onchange="handleDurationChange('until_stop')" />
-            <span class="duration-badge">⏹️ Until I stop</span>
-            <span class="duration-desc">Manual stop only</span>
+            <span>Until stop</span>
           </label>
         </div>
       </div>
 
       <!-- Destination picker (visible when 'until_arrive' is chosen) -->
-      <div id="destination-input-group" class="form-group hidden">
-        <label for="destination-name-input">Destination Name</label>
-        <input id="destination-name-input" type="text" placeholder="e.g. Home, Trailhead, Work" class="form-input" />
-        <span class="field-hint">Your live location will stop sharing automatically when you reach within 100m.</span>
+      <div id="destination-input-group" class="form-group hidden mb-4">
+        <label for="destination-name-input" class="block text-xs font-medium text-foreground mb-1.5">Destination Name</label>
+        <input id="destination-name-input" type="text" placeholder="e.g. Home, Trailhead, Cafe" class="form-input" />
+        <span class="field-hint">Sharing stops automatically within 100m of destination.</span>
       </div>
 
       <!-- Audience Control: Target Groups -->
-      <div class="form-group" style="margin-top: 14px;">
-        <label class="block text-xs uppercase tracking-wider text-slate-400 mb-2 font-bold">Audience (Who can see you?)</label>
+      <div class="form-group mb-4">
+        <label class="block text-xs font-medium text-foreground mb-2">Audience (Who can see your location?)</label>
         <div id="share-audience-list" class="audience-list">
-          <span class="text-xs text-slate-400">Loading your groups...</span>
+          <span class="text-xs text-muted-foreground">Loading groups...</span>
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
-        <button type="button" onclick="closeShareSetupModal()" class="action-sm" style="padding: 8px 16px;">Cancel</button>
-        <button type="button" id="btn-confirm-start-share" onclick="confirmStartSharing()" class="btn-primary-large" style="width: auto; padding: 8px 20px; font-size: 0.85rem;">Start Sharing</button>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeShareSetupModal()" class="action-sm">Cancel</button>
+        <button type="button" id="btn-confirm-start-share" onclick="confirmStartSharing()" class="btn-primary-large" style="width: auto;">Start Sharing</button>
       </div>
     </div>
   </div>
@@ -368,68 +389,69 @@
   <div id="share-log-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <span class="modal-icon">📋</span>
-        <h2>Location Sharing Log</h2>
+        <h2 class="text-base font-semibold text-foreground">Location Sharing Log</h2>
         <p class="modal-subtitle">Transparent record of when you started, extended, and stopped sharing</p>
       </div>
 
-      <div id="share-log-list" class="share-log-container">
-        <span class="text-xs text-slate-400">Loading activity log...</span>
+      <div id="share-log-list" class="share-log-container mb-4">
+        <span class="text-xs text-muted-foreground">Loading activity log...</span>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
-        <button type="button" onclick="closeShareLogModal()" class="action-sm" style="padding: 8px 16px;">Close</button>
+      <div class="flex justify-end">
+        <button type="button" onclick="closeShareLogModal()" class="action-sm">Close</button>
       </div>
+    </div>
+  </div>
+
   <!-- Group Meetups Modal -->
   <div id="meetups-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <span class="modal-icon">🎯</span>
-        <h2>Group Meetups & ETAs</h2>
+        <h2 class="text-base font-semibold text-foreground">Group Meetups & ETAs</h2>
         <p class="modal-subtitle">Track who is on the way, who arrived, and who is late</p>
       </div>
 
       <!-- Existing Meetups List -->
-      <div id="group-meetups-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 16px;">
-        <span class="text-xs text-slate-400">Loading meetups...</span>
+      <div id="group-meetups-list" class="mb-4 max-h-48 overflow-y-auto">
+        <span class="text-xs text-muted-foreground">Loading meetups...</span>
       </div>
 
       <!-- Create New Meetup Form -->
-      <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
-        <h3 style="font-size: 0.88rem; font-weight: 700; color: #f8fafc; margin-bottom: 10px;">Create New Meetup</h3>
-        <div class="form-group">
-          <label for="meetup-title-input">Meetup Title</label>
-          <input id="meetup-title-input" type="text" placeholder="e.g. Dinner, Trekking Trip, Team Coffee" class="form-input" />
+      <div class="border-t border-border pt-4">
+        <h3 class="text-xs font-semibold text-foreground mb-3 uppercase tracking-wider">Create New Meetup</h3>
+        <div class="form-group mb-2.5">
+          <label for="meetup-title-input" class="block text-xs font-medium text-foreground mb-1">Meetup Title</label>
+          <input id="meetup-title-input" type="text" placeholder="e.g. Dinner, Trekking Trip" class="form-input" />
         </div>
-        <div class="form-group">
-          <label for="meetup-dest-label">Destination Name / Address</label>
+        <div class="form-group mb-2.5">
+          <label for="meetup-dest-label" class="block text-xs font-medium text-foreground mb-1">Destination Name / Address</label>
           <input id="meetup-dest-label" type="text" placeholder="e.g. Central Station, Blue Tokai Cafe" class="form-input" />
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div class="grid grid-cols-2 gap-2 mb-2.5">
           <div class="form-group">
-            <label for="meetup-lat-input">Latitude</label>
+            <label for="meetup-lat-input" class="block text-xs font-medium text-foreground mb-1">Latitude</label>
             <input id="meetup-lat-input" type="number" step="any" placeholder="18.5204" class="form-input" />
           </div>
           <div class="form-group">
-            <label for="meetup-lng-input">Longitude</label>
+            <label for="meetup-lng-input" class="block text-xs font-medium text-foreground mb-1">Longitude</label>
             <input id="meetup-lng-input" type="number" step="any" placeholder="73.8567" class="form-input" />
           </div>
         </div>
-        <div class="form-group">
-          <label for="meetup-start-input">Start Date & Time</label>
+        <div class="form-group mb-2.5">
+          <label for="meetup-start-input" class="block text-xs font-medium text-foreground mb-1">Start Date & Time</label>
           <input id="meetup-start-input" type="datetime-local" class="form-input" />
         </div>
-        <div style="margin-top: 8px;">
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #cbd5e1; cursor: pointer;">
-            <input id="meetup-stop-on-arrival" type="checkbox" checked />
+        <div class="mb-3">
+          <label class="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <input id="meetup-stop-on-arrival" type="checkbox" checked class="chip-checkbox" />
             <span>Auto-stop sharing when I arrive</span>
           </label>
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
-        <button type="button" onclick="closeMeetupsModal()" class="action-sm" style="padding: 8px 16px;">Close</button>
-        <button type="button" id="btn-create-meetup-submit" onclick="submitCreateMeetup()" class="btn-primary-large" style="width: auto; padding: 8px 20px; font-size: 0.85rem;">Create Meetup</button>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeMeetupsModal()" class="action-sm">Close</button>
+        <button type="button" id="btn-create-meetup-submit" onclick="submitCreateMeetup()" class="btn-primary-large" style="width: auto;">Create Meetup</button>
       </div>
     </div>
   </div>

@@ -47,8 +47,9 @@
   }[s] || "h-9 px-4 py-2";
 
   const classes = [base, variantClasses, sizeClasses, extra].filter(Boolean).join(' ');
+  const ariaAttr = typeof ariaLabel !== 'undefined' ? `aria-label="${ariaLabel}"` : (s === 'icon' && (!text || text === '') ? `aria-label="${typeof iconLeft !== 'undefined' ? iconLeft : 'action'}"` : '');
 %>
-<button <%- btnId %> type="<%= btnType %>" class="<%= classes %>" <%= isDisabled ? 'disabled' : '' %> <%- rawAttrs %>>
+<button <%- btnId %> type="<%= btnType %>" class="<%= classes %>" <%= isDisabled ? 'disabled' : '' %> <%- ariaAttr %> <%- rawAttrs %>>
   <% if (typeof iconLeft !== 'undefined' && iconLeft) { %>
     <svg class="lucide <%= s === 'sm' ? 'lucide-sm mr-1.5' : 'mr-2' %>" aria-hidden="true"><use href="/icons/sprite.svg#<%= iconLeft %>"></use></svg>
   <% } %>

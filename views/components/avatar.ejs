@@ -36,6 +36,6 @@
     <span><%= initials %></span>
   </div>
   <% if (st !== 'none') { %>
-    <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full <%= statusClasses %>" aria-label="Status: <%= st %>"></span>
+    <span role="status" class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full <%= statusClasses %>" aria-label="Status: <%= st %>"></span>
   <% } %>
 </div>

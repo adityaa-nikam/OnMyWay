@@ -2,26 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title><%= meetup.title %> — OnMyWay (OMW) Meetup</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="/CSS/room.css?v=<%= Date.now() %>" />
+  <link rel="stylesheet" href="/css/app.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script defer src="/socket.io/socket.io.js"></script>
   <style>
-    /* Dedicated Meetup Workspace Styles */
+    /* Dedicated Minimalist Meetup Workspace Styles (shadcn neutral) */
     .meetup-layout {
       display: grid;
       grid-template-columns: 1fr 380px;
-      height: calc(100vh - 64px);
+      height: calc(100vh - 52px);
       overflow: hidden;
-      background: #0f172a;
+      background: hsl(var(--background));
     }
     @media (max-width: 900px) {
       .meetup-layout {
         grid-template-columns: 1fr;
-        grid-template-rows: 55vh 1fr;
-        height: calc(100vh - 64px);
+        grid-template-rows: 50vh 1fr;
+        height: calc(100vh - 52px);
       }
     }
     .meetup-map-container {
@@ -32,11 +34,11 @@
     #meetup-map {
       width: 100%;
       height: 100%;
-      background: #0b1120;
+      background: hsl(var(--muted));
     }
     .meetup-sidebar {
-      background: #1e293b;
-      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      background: hsl(var(--background));
+      border-left: 1px solid hsl(var(--border));
       display: flex;
       flex-direction: column;
       overflow-y: auto;
@@ -44,11 +46,11 @@
       gap: 16px;
     }
     .meetup-card {
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius);
       padding: 16px;
-      backdrop-filter: blur(8px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
     .meetup-title-row {
       display: flex;
@@ -57,195 +59,214 @@
       gap: 12px;
     }
     .meetup-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #f8fafc;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: hsl(var(--foreground));
       margin: 0;
+      letter-spacing: -0.015em;
     }
     .meetup-time-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.82rem;
-      color: #38bdf8;
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: 6px;
-      padding: 4px 8px;
+      font-size: 0.78rem;
+      color: hsl(var(--foreground));
+      background: hsl(var(--muted));
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius);
+      padding: 3px 8px;
       margin-top: 8px;
     }
     .dest-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: #94a3b8;
-      font-size: 0.85rem;
+      gap: 6px;
+      color: hsl(var(--muted-foreground));
+      font-size: 0.8rem;
       margin-top: 8px;
-    }
-    .dest-icon {
-      color: #f59e0b;
-      font-size: 1rem;
     }
     /* RSVP Buttons */
     .rsvp-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
+      gap: 6px;
       margin-top: 12px;
     }
     .btn-rsvp {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #94a3b8;
-      padding: 8px 6px;
-      border-radius: 8px;
-      font-size: 0.78rem;
-      font-weight: 600;
+      background: hsl(var(--background));
+      border: 1px solid hsl(var(--border));
+      color: hsl(var(--muted-foreground));
+      padding: 7px 6px;
+      border-radius: var(--radius);
+      font-size: 0.75rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       text-align: center;
     }
     .btn-rsvp:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #f8fafc;
+      background: hsl(var(--muted));
+      color: hsl(var(--foreground));
     }
     .btn-rsvp.active-going {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: #10b981;
-      color: #34d399;
+      background: hsl(var(--primary));
+      border-color: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
     }
     .btn-rsvp.active-maybe {
-      background: rgba(245, 158, 11, 0.2);
-      border-color: #f59e0b;
-      color: #fbbf24;
+      background: hsl(var(--muted));
+      border-color: hsl(var(--foreground)/30%);
+      color: hsl(var(--foreground));
     }
     .btn-rsvp.active-no {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: #ef4444;
-      color: #f87171;
+      background: hsl(var(--muted));
+      border-color: hsl(var(--border));
+      color: hsl(var(--muted-foreground));
+      text-decoration: line-through;
     }
     /* One-tap Late Button */
     .btn-late-action {
       width: 100%;
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3));
-      border: 1px solid #f59e0b;
-      color: #fbbf24;
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.85rem;
+      background: hsl(var(--background));
+      border: 1px solid hsl(var(--border));
+      color: hsl(var(--foreground));
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      font-weight: 500;
+      font-size: 0.78rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
       margin-top: 12px;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
     .btn-late-action:hover {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.4));
-      transform: translateY(-1px);
+      background: hsl(var(--muted));
     }
     .btn-late-action:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      transform: none;
     }
-    /* Participants List */
+    /* Attendees List */
+    .participants-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: hsl(var(--muted-foreground));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
     .participant-card {
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius);
       padding: 10px 12px;
-      margin-bottom: 8px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     }
     .participant-info {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      overflow: hidden;
     }
     .participant-name {
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       font-weight: 600;
-      color: #f1f5f9;
+      color: hsl(var(--foreground));
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .participant-meta {
-      font-size: 0.75rem;
-      color: #94a3b8;
+      font-size: 0.72rem;
+      color: hsl(var(--muted-foreground));
     }
     .eta-pill {
-      display: inline-flex;
+      display: flex;
       flex-direction: column;
       align-items: flex-end;
       gap: 2px;
+      flex-shrink: 0;
     }
     .eta-badge {
-      font-size: 0.78rem;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: rgba(56, 189, 248, 0.15);
-      color: #38bdf8;
-      border: 1px solid rgba(56, 189, 248, 0.3);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: var(--radius);
+      background: hsl(var(--muted));
+      color: hsl(var(--foreground));
+      border: 1px solid hsl(var(--border));
     }
     .eta-badge.badge-arrived {
-      background: rgba(16, 185, 129, 0.2);
-      color: #34d399;
-      border-color: #10b981;
+      background: hsl(var(--foreground));
+      color: hsl(var(--background));
+      border-color: hsl(var(--foreground));
     }
     .eta-badge.badge-late {
-      background: rgba(239, 68, 68, 0.2);
-      color: #f87171;
-      border-color: #ef4444;
+      background: hsl(var(--destructive)/10%);
+      color: hsl(var(--destructive));
+      border-color: hsl(var(--destructive)/30%);
     }
     .approx-tag {
       font-size: 0.65rem;
-      color: #94a3b8;
+      color: hsl(var(--muted-foreground));
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.05em;
     }
     .ics-btn {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #e2e8f0;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      font-weight: 600;
+      background: hsl(var(--background));
+      border: 1px solid hsl(var(--border));
+      color: hsl(var(--foreground));
+      padding: 4px 10px;
+      border-radius: var(--radius);
+      font-size: 0.75rem;
+      font-weight: 500;
       display: inline-flex;
       align-items: center;
       gap: 6px;
       text-decoration: none;
-      transition: all 0.2s ease;
+      transition: background-color 0.15s ease;
     }
     .ics-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: #ffffff;
+      background: hsl(var(--muted));
+    }
+    /* Leaflet Desaturated Theme */
+    .leaflet-desaturated-tiles {
+      filter: grayscale(100%) brightness(102%) contrast(98%);
     }
   </style>
 </head>
-<body class="theme-dark">
+<body class="bg-background text-foreground antialiased selection:bg-neutral-200">
   <!-- Top Navigation -->
-  <header class="app-header">
-    <div class="header-left">
-      <a href="/room?groupId=<%= group.id %>" class="brand-link" title="Back to Group">
-        <span class="brand-icon">←</span>
-        <span class="brand-title"><%= group.name %></span>
+  <header class="h-[52px] border-b border-border bg-background px-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="/room?groupId=<%= group.id %>" class="inline-flex items-center gap-1.5 text-xs font-medium text-foreground hover:text-muted-foreground transition-colors">
+        <span>←</span>
+        <span><%= group.name %></span>
       </a>
-      <div class="room-pill">
-        <span class="room-label">MEETUP:</span>
-        <span class="room-id font-mono"><%= meetup.title %></span>
+      <div class="inline-flex items-center gap-2 border border-border bg-muted/40 px-2.5 py-0.5 rounded text-xs">
+        <span class="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">MEETUP</span>
+        <span class="font-mono text-xs font-semibold text-foreground"><%= meetup.title %></span>
       </div>
     </div>
-    <div class="header-right">
+    <div class="flex items-center gap-3">
       <a href="/api/meetups/<%= meetup.id %>/ics" class="ics-btn" title="Export .ics calendar file">
-        📅 Add to Calendar (.ics)
+        Add to Calendar (.ics)
       </a>
-      <span id="meetup-status-badge" class="badge <%= meetup.status === 'ended' ? 'badge-offline' : 'badge-online' %>">
+      <span id="meetup-status-badge" class="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-semibold text-foreground bg-muted uppercase tracking-wider">
         <%= meetup.status.toUpperCase() %>
       </span>
     </div>
@@ -266,43 +287,47 @@
           <h2 class="meetup-title"><%= meetup.title %></h2>
         </div>
         <div class="meetup-time-badge">
-          ⏰ <span id="meetup-start-formatted">Loading start time...</span>
+          <span id="meetup-start-formatted">Loading start time...</span>
         </div>
         <div class="dest-row">
-          <span class="dest-icon">📍</span>
+          <span>📍</span>
           <span id="dest-label-text"><%= meetup.destination.label %></span>
         </div>
         <% if (meetup.stop_on_arrival) { %>
-          <div style="font-size: 0.72rem; color: #10b981; margin-top: 8px; display: flex; align-items: center; gap: 4px;">
-            <span>🛡️ Auto-stop location sharing when arrived</span>
+          <div class="text-[11px] text-muted-foreground mt-2 flex items-center gap-1">
+            <span>Auto-stop location sharing upon arrival</span>
           </div>
         <% } %>
 
-        <!-- RSVP Controls -->
-        <div style="margin-top: 14px;">
-          <label style="font-size: 0.72rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Your RSVP</label>
+        <!-- RSVP Grid -->
+        <div class="mt-4 pt-3 border-t border-border">
+          <div class="text-[11px] font-medium text-muted-foreground mb-1.5">Your RSVP:</div>
           <div class="rsvp-grid">
-            <button id="rsvp-going" class="btn-rsvp" onclick="updateRsvp('going')">✓ Going</button>
-            <button id="rsvp-maybe" class="btn-rsvp" onclick="updateRsvp('maybe')">? Maybe</button>
-            <button id="rsvp-no" class="btn-rsvp" onclick="updateRsvp('no')">✕ Can't go</button>
+            <button id="rsvp-going" class="btn-rsvp" onclick="setRsvp('going')">Going</button>
+            <button id="rsvp-maybe" class="btn-rsvp" onclick="setRsvp('maybe')">Maybe</button>
+            <button id="rsvp-no" class="btn-rsvp" onclick="setRsvp('no')">Can't Go</button>
           </div>
         </div>
 
-        <!-- One-Tap Late Action -->
-        <button id="btn-running-late" class="btn-late-action" onclick="sendRunningLate()">
-          ⏱️ Running late by 10 min
+        <!-- One-Tap Late Button -->
+        <button id="btn-running-late" class="btn-late-action" onclick="reportRunningLate()">
+          <span>⏳ Running late by 10 min</span>
         </button>
       </div>
 
-      <!-- Attendees & Live ETAs Card -->
-      <div class="meetup-card" style="flex: 1;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <h3 style="font-size: 0.95rem; font-weight: 700; color: #f8fafc; margin: 0;">Who's Late? & ETAs</h3>
+      <!-- Attendees & ETAs -->
+      <div class="participants-section">
+        <div class="section-title">
+          <span>Attendees & ETAs</span>
           <span id="attendee-count-badge" class="badge">0</span>
         </div>
-
-        <div id="participants-list-container">
-          <span style="font-size: 0.8rem; color: #94a3b8;">Loading attendee ETAs...</span>
+        <div id="participants-list-container" class="flex flex-col gap-2">
+          <!-- Dynamically populated safely via textContent -->
+          <div class="participant-card">
+            <div class="participant-info">
+              <span class="participant-name">Loading attendees...</span>
+            </div>
+          </div>
         </div>
       </div>
     </aside>
@@ -311,29 +336,27 @@
   <script>
     const MEETUP_DATA = {
       id: "<%= meetup.id %>",
-      groupId: "<%= meetup.group_id %>",
+      groupId: "<%= group.id %>",
       title: "<%= meetup.title.replace(/"/g, '\\"') %>",
-      destLat: <%= meetup.destination.lat %>,
-      destLng: <%= meetup.destination.lng %>,
+      destLat: <%= meetup.destination.latitude %>,
+      destLng: <%= meetup.destination.longitude %>,
       destLabel: "<%= meetup.destination.label.replace(/"/g, '\\"') %>",
-      startTime: <%= meetup.start_time %>,
-      status: "<%= meetup.status %>",
-      stopOnArrival: <%= meetup.stop_on_arrival ? 'true' : 'false' %>,
-      currentUserId: "<%= user.id %>",
-      currentUserName: "<%= user.displayName.replace(/"/g, '\\"') %>"
+      startTime: "<%= meetup.start_time %>",
+      currentUserId: "<%= user ? user.id : '' %>",
+      csrfToken: "<%= csrfToken %>"
     };
 
     let map = null;
-    let socket = null;
     let destMarker = null;
     let destCircle = null;
-    let attendeeMarkers = new Map(); // userId -> Leaflet Marker
-    let attendeePolylines = new Map(); // userId -> Leaflet Polyline
+    let attendeeMarkers = new Map();
+    let attendeePolylines = new Map();
+    let socket = null;
 
     document.addEventListener('DOMContentLoaded', () => {
       // 1. Format start time
-      const date = new Date(MEETUP_DATA.startTime);
-      const timeStr = date.toLocaleString([], {
+      const startDate = new Date(MEETUP_DATA.startTime);
+      const timeStr = startDate.toLocaleString([], {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
@@ -358,30 +381,33 @@
         attributionControl: false
       }).setView([MEETUP_DATA.destLat, MEETUP_DATA.destLng], 14);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19
+      // Light Desaturated Carto Positron Tiles
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20,
+        subdomains: 'abcd',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
       }).addTo(map);
 
-      // Destination Gold Marker
+      // Destination Marker (Monochrome Target)
       const destIcon = L.divIcon({
         className: 'custom-dest-pin',
-        html: `<div style="background: #f59e0b; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5); border: 2px solid #ffffff;"><span style="transform: rotate(45deg); font-size: 14px;">🎯</span></div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
+        html: `<div style="background: #09090b; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3); border: 2px solid #ffffff;"><span style="color: #ffffff; font-size: 11px;">🎯</span></div>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+        popupAnchor: [0, -14]
       });
 
       destMarker = L.marker([MEETUP_DATA.destLat, MEETUP_DATA.destLng], { icon: destIcon }).addTo(map);
       destMarker.bindPopup(`<b>${MEETUP_DATA.title}</b><br>${MEETUP_DATA.destLabel}`).openPopup();
 
-      // 100m Arrival Geofence Circle
+      // 100m Arrival Geofence Circle: Light grey fill with dashed 1px border
       destCircle = L.circle([MEETUP_DATA.destLat, MEETUP_DATA.destLng], {
         radius: 100,
-        color: '#f59e0b',
-        fillColor: '#f59e0b',
-        fillOpacity: 0.15,
-        weight: 1.5,
-        dashArray: '4, 6'
+        color: '#71717a',
+        fillColor: '#e4e4e7',
+        fillOpacity: 0.25,
+        weight: 1,
+        dashArray: '4, 4'
       }).addTo(map);
     }
 
@@ -416,7 +442,7 @@
       socket.on('meetup:ended', (data) => {
         if (data.meetupId === MEETUP_DATA.id) {
           const badge = document.getElementById('meetup-status-badge');
-          badge.className = 'badge badge-offline';
+          badge.className = 'inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-semibold text-foreground bg-muted uppercase tracking-wider';
           badge.textContent = 'ENDED';
         }
       });
@@ -438,14 +464,70 @@
     }
 
     function renderRsvpState(rsvp) {
-      document.getElementById('rsvp-going').classList.remove('active-going');
-      document.getElementById('rsvp-maybe').classList.remove('active-maybe');
-      document.getElementById('rsvp-no').classList.remove('active-no');
+      document.querySelectorAll('.btn-rsvp').forEach((btn) => {
+        btn.classList.remove('active-going', 'active-maybe', 'active-no');
+      });
+      if (rsvp === 'going') {
+        document.getElementById('rsvp-going')?.classList.add('active-going');
+      } else if (rsvp === 'maybe') {
+        document.getElementById('rsvp-maybe')?.classList.add('active-maybe');
+      } else if (rsvp === 'no') {
+        document.getElementById('rsvp-no')?.classList.add('active-no');
+      }
+    }
 
-      if (!rsvp) return;
-      if (rsvp.rsvp === 'going') document.getElementById('rsvp-going').classList.add('active-going');
-      if (rsvp.rsvp === 'maybe') document.getElementById('rsvp-maybe').classList.add('active-maybe');
-      if (rsvp.rsvp === 'no') document.getElementById('rsvp-no').classList.add('active-no');
+    async function setRsvp(status) {
+      try {
+        const res = await fetch(`/api/meetups/${MEETUP_DATA.id}/rsvp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': MEETUP_DATA.csrfToken
+          },
+          body: JSON.stringify({ rsvp: status })
+        });
+        const data = await res.json();
+        if (data.success) {
+          renderRsvpState(status);
+          fetchMeetupDetails();
+        }
+      } catch (err) {
+        alert('Could not update RSVP');
+      }
+    }
+
+    async function reportRunningLate() {
+      const btn = document.getElementById('btn-running-late');
+      btn.disabled = true;
+      btn.textContent = 'Sending notice...';
+
+      try {
+        const res = await fetch(`/api/meetups/${MEETUP_DATA.id}/late`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': MEETUP_DATA.csrfToken
+          },
+          body: JSON.stringify({ additionalMinutes: 10 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          btn.textContent = 'Reported late (+10m)';
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.textContent = '⏳ Running late by 10 min';
+          }, 5000);
+          fetchMeetupDetails();
+        } else {
+          alert(data.error || 'Could not update status');
+          btn.disabled = false;
+          btn.textContent = '⏳ Running late by 10 min';
+        }
+      } catch (err) {
+        alert('Network error updating status');
+        btn.disabled = false;
+        btn.textContent = '⏳ Running late by 10 min';
+      }
     }
 
     function renderParticipants(participants) {
@@ -455,7 +537,7 @@
       document.getElementById('attendee-count-badge').textContent = participants.length;
 
       if (!participants || participants.length === 0) {
-        container.innerHTML = '<span style="font-size: 0.8rem; color: #94a3b8;">No attendees yet.</span>';
+        container.innerHTML = '<span class="text-xs text-muted-foreground">No attendees yet.</span>';
         return;
       }
 
@@ -497,9 +579,6 @@
           badge.textContent = `${mins} min`;
         } else {
           badge.className = 'eta-badge';
-          badge.style.background = 'rgba(255,255,255,0.05)';
-          badge.style.color = '#94a3b8';
-          badge.style.borderColor = 'rgba(255,255,255,0.1)';
           badge.textContent = 'NO GPS';
         }
         etaPill.appendChild(badge);
@@ -528,8 +607,8 @@
 
           // Update marker
           let marker = attendeeMarkers.get(p.userId);
-          const iconHtml = `<div style="background: #38bdf8; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0b1120; font-weight: bold; font-size: 11px; border: 2px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">${p.userName.slice(0, 2).toUpperCase()}</div>`;
-          const customIcon = L.divIcon({ className: 'attendee-pin', html: iconHtml, iconSize: [28, 28] });
+          const iconHtml = `<div style="background: #09090b; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 600; font-size: 10px; border: 2px solid #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3);">${p.userName.slice(0, 1).toUpperCase()}</div>`;
+          const customIcon = L.divIcon({ className: 'attendee-pin', html: iconHtml, iconSize: [22, 22] });
 
           if (!marker) {
             marker = L.marker(startPt, { icon: customIcon }).addTo(map);
@@ -541,70 +620,29 @@
           const etaText = p.isArrived ? 'Arrived' : (p.etaSeconds ? `${Math.round(p.etaSeconds / 60)} min` : 'Active');
           marker.bindPopup(`<b>${p.userName}</b><br>ETA: ${etaText}`);
 
-          // Update polyline
+          // Update polyline: 2px dark-grey line
           let poly = attendeePolylines.get(p.userId);
           if (!poly) {
             poly = L.polyline(p.polyline, {
-              color: p.isLate ? '#ef4444' : '#38bdf8',
-              weight: 3.5,
-              opacity: 0.8,
-              dashArray: p.isApproximate ? '6, 8' : null
+              color: '#3f3f46',
+              weight: 2,
+              opacity: 0.9,
+              dashArray: p.isApproximate ? '4, 4' : null
             }).addTo(map);
             attendeePolylines.set(p.userId, poly);
           } else {
             poly.setLatLngs(p.polyline);
             poly.setStyle({
-              color: p.isLate ? '#ef4444' : '#38bdf8',
-              dashArray: p.isApproximate ? '6, 8' : null
+              color: '#3f3f46',
+              weight: 2,
+              dashArray: p.isApproximate ? '4, 4' : null
             });
           }
         }
       });
 
-      if (bounds.isValid() && participants.some((p) => p.polyline)) {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-      }
-    }
-
-    async function updateRsvp(rsvpStatus) {
-      try {
-        const res = await fetch(`/api/meetups/${MEETUP_DATA.id}/rsvp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rsvp: rsvpStatus })
-        });
-        if (res.ok) {
-          fetchMeetupDetails();
-        }
-      } catch (err) {
-        console.error('Error updating RSVP:', err);
-      }
-    }
-
-    async function sendRunningLate() {
-      const btn = document.getElementById('btn-running-late');
-      btn.disabled = true;
-      btn.textContent = 'Sending notice...';
-
-      try {
-        const res = await fetch(`/api/meetups/${MEETUP_DATA.id}/late`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (res.ok) {
-          btn.textContent = '✓ Sent! Running late by 10 min';
-          fetchMeetupDetails();
-          setTimeout(() => {
-            btn.disabled = false;
-            btn.textContent = '⏱️ Running late by 10 min';
-          }, 5000);
-        } else {
-          btn.disabled = false;
-          btn.textContent = '⏱️ Running late by 10 min';
-        }
-      } catch (err) {
-        btn.disabled = false;
-        btn.textContent = '⏱️ Running late by 10 min';
+      if (participants.some((p) => p.polyline && p.polyline.length > 0)) {
+        map.fitBounds(bounds, { padding: [40, 40] });
       }
     }
   </script>

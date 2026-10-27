@@ -4,37 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Groups — OnMyWay (OMW)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
+<body class="min-h-screen bg-background text-foreground p-4 md:p-8 font-sans antialiased selection:bg-neutral-200">
   <div class="max-w-4xl mx-auto">
-    <!-- Top Navigation -->
-    <header class="flex items-center justify-between pb-6 mb-8 border-b border-slate-800">
+    <!-- Top Navigation Header -->
+    <header class="flex items-center justify-between pb-6 mb-8 border-b border-border">
       <div class="flex items-center gap-3">
-        <a href="/" class="flex items-center gap-2 group">
-          <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-xl group-hover:scale-105 transition">
-            ⚡
+        <a href="/" class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-md border border-border bg-muted flex items-center justify-center">
+            <svg class="h-4 w-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
           </div>
           <div>
-            <h1 class="text-xl font-extrabold text-white tracking-tight flex items-center gap-1.5">
-              <span>OnMyWay</span>
-              <span class="text-sky-400 font-mono text-sm">(OMW)</span>
-            </h1>
-            <p class="text-[11px] text-slate-400 font-medium">Share until you arrive.</p>
+            <h1 class="text-base font-semibold text-foreground tracking-tight">OnMyWay</h1>
+            <p class="text-[11px] text-muted-foreground">Share until you arrive.</p>
           </div>
         </a>
       </div>
 
-      <div class="flex items-center gap-4">
-        <div class="hidden sm:flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
-          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span class="text-slate-300 font-medium"><%= user.displayName %></span>
+      <div class="flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-2 border border-border bg-muted/40 px-3 py-1 rounded-md text-xs">
+          <span class="w-1.5 h-1.5 rounded-full bg-foreground"></span>
+          <span class="text-foreground font-medium"><%= user.displayName %></span>
         </div>
-        <a href="/account" class="text-xs font-semibold text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900 transition">
+        <a href="/account" class="text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-md hover:bg-muted transition-colors">
           Account
         </a>
         <form action="/auth/logout" method="POST" class="inline">
-          <button type="submit" class="text-xs font-semibold text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg hover:bg-red-950/30 transition">
+          <button type="submit" class="text-xs font-medium text-muted-foreground hover:text-destructive px-2.5 py-1.5 rounded-md hover:bg-muted transition-colors">
             Sign Out
           </button>
         </form>
@@ -43,58 +44,76 @@
 
     <!-- Main Content Area -->
     <main>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h2 class="text-2xl font-bold text-white tracking-tight">Your Groups</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Persistent group coordination workspaces you belong to</p>
+          <h2 class="text-xl font-semibold text-foreground tracking-tight">Your Groups</h2>
+          <p class="text-xs text-muted-foreground mt-0.5">Persistent group coordination workspaces</p>
         </div>
 
         <div class="flex items-center gap-2">
-          <button onclick="document.getElementById('modal-join').classList.remove('hidden')"
-                  class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-1.5">
-            🔗 Join with Code
+          <button id="btn-open-join-modal"
+                  class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            Join with Code
           </button>
-          <button onclick="document.getElementById('modal-create').classList.remove('hidden')"
-                  class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-lg shadow-sky-600/20 transition flex items-center gap-1.5">
+          <button id="btn-open-create-modal"
+                  class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow transition-colors hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
             + New Group
           </button>
         </div>
       </div>
 
-      <!-- Groups Grid -->
+      <!-- Groups List / Empty State -->
       <% if (groups.length === 0) { %>
-        <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-12 text-center">
-          <div class="text-4xl mb-3">👥</div>
-          <h3 class="text-base font-bold text-white mb-1">No groups yet</h3>
-          <p class="text-xs text-slate-400 max-w-sm mx-auto mb-6">
-            Create your first persistent group to start sharing locations and messages with your friends, team, or family.
+        <div class="rounded-lg border border-border bg-card p-12 text-center shadow-sm">
+          <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted">
+            <svg class="h-5 w-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <h3 class="text-sm font-semibold text-foreground mb-1">No groups yet</h3>
+          <p class="text-xs text-muted-foreground max-w-sm mx-auto mb-6">
+            Create your first persistent group to start sharing locations and messages with friends, teammates, or family.
           </p>
-          <button onclick="document.getElementById('modal-create').classList.remove('hidden')"
-                  class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-lg shadow-sky-600/20 transition">
-            Create a Group Now
+          <button onclick="document.getElementById('dialog-create').showModal()"
+                  class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow transition-colors hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+            Create a Group
           </button>
         </div>
       <% } else { %>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <% groups.forEach(function(g) { %>
-            <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 transition flex flex-col justify-between">
+            <div class="rounded-lg border border-border bg-card p-5 shadow-sm hover:border-neutral-400 transition-colors flex flex-col justify-between">
               <div>
                 <div class="flex items-start justify-between gap-2 mb-2">
-                  <h3 class="text-base font-bold text-white truncate"><%= g.name %></h3>
-                  <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md <%= g.role === 'owner' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-slate-800 text-slate-400' %>">
+                  <h3 class="text-sm font-semibold text-foreground truncate"><%= g.name %></h3>
+                  <span class="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[10px] font-medium text-foreground bg-muted/50 uppercase tracking-wider">
                     <%= g.role %>
                   </span>
                 </div>
-                <div class="flex items-center gap-4 text-xs text-slate-400 mb-6">
-                  <span>👥 <%= g.member_count %> member<%= g.member_count === 1 ? '' : 's' %></span>
-                  <span>💬 <%= g.total_messages %> message<%= g.total_messages === 1 ? '' : 's' %></span>
+                <div class="flex items-center gap-4 text-xs text-muted-foreground mb-6">
+                  <span class="flex items-center gap-1">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <%= g.member_count %> <%= g.member_count === 1 ? 'member' : 'members' %>
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <%= g.total_messages %> <%= g.total_messages === 1 ? 'message' : 'messages' %>
+                  </span>
+                  <% if (g.unread_count && g.unread_count > 0) { %>
+                    <span class="inline-flex items-center rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-2 py-0.5">
+                      <%= g.unread_count %> new
+                    </span>
+                  <% } %>
                 </div>
               </div>
 
-              <div class="flex items-center justify-between pt-4 border-t border-slate-800/60">
-                <span class="text-[11px] text-slate-500 font-mono">ID: <%= g.id.slice(0, 10) %>...</span>
+              <div class="flex items-center justify-between pt-4 border-t border-border">
+                <span class="text-[11px] text-muted-foreground font-mono">#<%= g.id.slice(0, 8) %></span>
                 <a href="/groups/<%= g.id %>"
-                   class="px-4 py-2 rounded-xl bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 text-xs font-semibold transition flex items-center gap-1.5">
+                   class="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
                   Open Workspace →
                 </a>
               </div>
@@ -104,92 +123,96 @@
       <% } %>
 
       <!-- Ephemeral Quick Room Link -->
-      <div class="mt-12 p-5 rounded-2xl bg-slate-900/40 border border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="mt-12 p-5 rounded-lg border border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <span>⚡ Ephemeral Guest Mode</span>
+          <h4 class="text-xs font-semibold text-foreground">
+            Ephemeral Guest Mode
           </h4>
-          <p class="text-xs text-slate-500 mt-1">
-            Need a one-time anonymous coordination room that leaves no trace in the database?
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Need a quick coordination session without any database history?
           </p>
         </div>
-        <a href="/" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition shrink-0">
-          Create Ephemeral Room
+        <a href="/" class="inline-flex h-8 items-center justify-center rounded-md border border-input bg-background px-3 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring shrink-0">
+          Start Ephemeral Room
         </a>
       </div>
     </main>
   </div>
 
-  <!-- Modal: Create Group -->
-  <div id="modal-create" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-bold text-white">Create New Group</h3>
-        <button onclick="document.getElementById('modal-create').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+  <!-- Native Modal: Create Group -->
+  <dialog id="dialog-create" class="rounded-lg border border-border bg-card p-6 shadow-lg backdrop:bg-black/40 backdrop:backdrop-blur-sm max-w-md w-full">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-foreground">Create New Group</h3>
+      <button onclick="document.getElementById('dialog-create').close()" class="text-muted-foreground hover:text-foreground text-sm">✕</button>
+    </div>
+
+    <form id="form-create-group" class="space-y-4">
+      <div class="space-y-1.5">
+        <label class="block text-xs font-medium text-foreground">Group Name</label>
+        <input type="text" id="create-group-name" required placeholder="e.g. Weekend Trek / Roadtrip"
+               class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
       </div>
 
-      <form id="form-create-group" onsubmit="handleCreateGroup(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1.5">Group Name</label>
-          <input type="text" id="create-group-name" required placeholder="e.g. Weekend Trek / Roadtrip"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 outline-none focus:border-sky-500" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1.5">Chat History Retention</label>
-          <select id="create-group-retention" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white outline-none">
-            <option value="30">Keep messages for 30 days</option>
-            <option value="90">Keep messages for 90 days</option>
-            <option value="365">Keep messages for 1 year</option>
-            <option value="0">Never delete messages</option>
-          </select>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="document.getElementById('modal-create').classList.add('hidden')"
-                  class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700">
-            Cancel
-          </button>
-          <button type="submit"
-                  class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-lg shadow-sky-600/20">
-            Create Group
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Join Group with Code -->
-  <div id="modal-join" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-bold text-white">Join with Invite Code</h3>
-        <button onclick="document.getElementById('modal-join').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+      <div class="space-y-1.5">
+        <label class="block text-xs font-medium text-foreground">Chat History Retention</label>
+        <select id="create-group-retention" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+          <option value="30">Keep messages for 30 days</option>
+          <option value="90">Keep messages for 90 days</option>
+          <option value="365">Keep messages for 1 year</option>
+          <option value="0">Never delete messages</option>
+        </select>
       </div>
 
-      <form id="form-join-group" onsubmit="handleJoinGroup(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1.5">Invite Link or Token Code</label>
-          <input type="text" id="join-invite-token" required placeholder="Paste full link or token code"
-                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 outline-none focus:border-sky-500" />
-        </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="document.getElementById('dialog-create').close()"
+                class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+          Cancel
+        </button>
+        <button type="submit"
+                class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow transition-colors hover:bg-neutral-800">
+          Create Group
+        </button>
+      </div>
+    </form>
+  </dialog>
 
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="document.getElementById('modal-join').classList.add('hidden')"
-                  class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700">
-            Cancel
-          </button>
-          <button type="submit"
-                  class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-lg shadow-sky-600/20">
-            Join Group
-          </button>
-        </div>
-      </form>
+  <!-- Native Modal: Join Group with Code -->
+  <dialog id="dialog-join" class="rounded-lg border border-border bg-card p-6 shadow-lg backdrop:bg-black/40 backdrop:backdrop-blur-sm max-w-md w-full">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-foreground">Join with Invite Code</h3>
+      <button onclick="document.getElementById('dialog-join').close()" class="text-muted-foreground hover:text-foreground text-sm">✕</button>
     </div>
-  </div>
+
+    <form id="form-join-group" class="space-y-4">
+      <div class="space-y-1.5">
+        <label class="block text-xs font-medium text-foreground">Invite Link or Token Code</label>
+        <input type="text" id="join-invite-token" required placeholder="Paste full link or token code"
+               class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="document.getElementById('dialog-join').close()"
+                class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+          Cancel
+        </button>
+        <button type="submit"
+                class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow transition-colors hover:bg-neutral-800">
+          Join Group
+        </button>
+      </div>
+    </form>
+  </dialog>
 
   <script>
-    async function handleCreateGroup(e) {
+    document.getElementById('btn-open-create-modal')?.addEventListener('click', () => {
+      document.getElementById('dialog-create')?.showModal();
+    });
+
+    document.getElementById('btn-open-join-modal')?.addEventListener('click', () => {
+      document.getElementById('dialog-join')?.showModal();
+    });
+
+    document.getElementById('form-create-group')?.addEventListener('submit', async function(e) {
       e.preventDefault();
       const name = document.getElementById('create-group-name').value.trim();
       const retention = document.getElementById('create-group-retention').value;
@@ -213,19 +236,18 @@
       } catch (err) {
         alert('Network error while creating group');
       }
-    }
+    });
 
-    function handleJoinGroup(e) {
+    document.getElementById('form-join-group')?.addEventListener('submit', function(e) {
       e.preventDefault();
       let raw = document.getElementById('join-invite-token').value.trim();
       if (!raw) return;
 
-      // Extract token if full URL was pasted
       if (raw.includes('/join-group/')) {
         raw = raw.split('/join-group/')[1].split(/[?#]/)[0];
       }
       window.location.href = '/join-group/' + encodeURIComponent(raw);
-    }
+    });
   </script>
 </body>
 </html>
