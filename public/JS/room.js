@@ -17,6 +17,7 @@ let isSosActive = false;
 let watchId = null;
 let userMarker = null;
 let userGhostCircle = null;
+let userAccuracyCircle = null;
 let lastKnownLat = null;
 let lastKnownLng = null;
 let hasCenteredOnce = false;
@@ -222,34 +223,39 @@ function createZenlyMarkerIcon(displayName, isSelf, isSos, isStale = false) {
   const initial = (displayName || "U").trim().charAt(0).toUpperCase();
   const safeName = (displayName || "User").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  if (isStale) {
-    return L.divIcon({
-      className: "omw-custom-icon",
-      html: `
-        <div class="omw-stale-marker" title="${safeName}">
-          <div class="omw-stale-ring"></div>
-          <div class="omw-avatar-hover">${initial}</div>
-        </div>
-      `,
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
-      popupAnchor: [0, -14]
-    });
-  }
+  const symbol = isSos ? "🆘" : (isSelf ? "📍" : "👤");
+  const roleClass = isSelf ? "is-self" : "is-peer";
+  const sosClass = isSos ? "is-sos" : "";
+  const staleClass = isStale ? "is-stale" : "";
+  const labelText = isSelf ? `${safeName} (You)` : safeName;
 
   const html = `
-    <div class="omw-live-marker ${isSelf ? "self" : ""} ${isSos ? "sos" : ""}" title="${safeName}">
-      <div class="omw-live-pulse"></div>
-      <div class="omw-live-dot"></div>
-      <div class="omw-avatar-hover">${initial}</div>
+    <div class="omw-marker-wrapper ${roleClass} ${sosClass} ${staleClass}" title="${safeName}">
+      <!-- Persistent Floating Location Tag -->
+      <div class="omw-marker-tag">
+        <span class="omw-tag-symbol">${symbol}</span>
+        <span class="omw-tag-label">${labelText}</span>
+        ${isSelf && !isStale ? '<span class="omw-tag-live-dot" title="Live GPS Active"></span>' : ''}
+        ${isStale ? '<span class="omw-tag-stale-badge">Paused</span>' : ''}
+      </div>
+
+      <!-- Pin Body & Pulse Radar -->
+      <div class="omw-pin-body">
+        ${!isStale ? '<div class="omw-pin-radar-wave"></div>' : ''}
+        <div class="omw-pin-circle">
+          <span class="omw-pin-char">${initial}</span>
+        </div>
+        <div class="omw-pin-pointer"></div>
+      </div>
     </div>
   `;
+
   return L.divIcon({
-    className: "omw-custom-icon",
+    className: "omw-custom-location-icon",
     html,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -14]
+    iconSize: [160, 64],
+    iconAnchor: [80, 58],
+    popupAnchor: [0, -60]
   });
 }
 
@@ -752,6 +758,17 @@ function startLocationSharing() {
     return;
   }
 
+  // Request immediate position fix first, so the marker appears instantly
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      onLocationUpdate(pos);
+    },
+    (err) => {
+      console.warn("Initial position fix attempt:", err);
+    },
+    { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+  );
+
   watchId = navigator.geolocation.watchPosition(
     onLocationUpdate,
     onLocationError,
@@ -760,9 +777,9 @@ function startLocationSharing() {
 
   isSharing = true;
 
-  btnStartLocation.classList.add("hidden");
-  btnStopLocation.classList.remove("hidden");
-  sharingPill.classList.remove("hidden");
+  if (btnStartLocation) btnStartLocation.classList.add("hidden");
+  if (btnStopLocation) btnStopLocation.classList.remove("hidden");
+  if (sharingPill) sharingPill.classList.remove("hidden");
 
   appendSystemMessage("You started sharing your live location");
 }
@@ -782,15 +799,32 @@ function onLocationUpdate(position) {
   lastKnownLng = longitude;
   const now = Date.now();
 
+  // Live GPS accuracy aura circle
+  const accuracy = (position.coords && position.coords.accuracy) ? position.coords.accuracy : 25;
+  if (!userAccuracyCircle) {
+    userAccuracyCircle = L.circle([latitude, longitude], {
+      radius: Math.max(accuracy, 18),
+      color: "#3b82f6",
+      fillColor: "#3b82f6",
+      fillOpacity: 0.12,
+      weight: 1,
+      dashArray: "3, 5"
+    }).addTo(map);
+  } else {
+    userAccuracyCircle.setLatLng([latitude, longitude]);
+    userAccuracyCircle.setRadius(Math.max(accuracy, 18));
+  }
+
   // Update own Zenly-style marker
   if (!userMarker) {
     userMarker = L.marker([latitude, longitude], {
-      icon: createZenlyMarkerIcon(localDisplayName, true, isSosActive)
+      icon: createZenlyMarkerIcon(localDisplayName, true, isSosActive),
+      zIndexOffset: 1000 // Always render self above other markers
     }).addTo(map);
     userMarker.bindPopup(createSafePopup(localDisplayName, true, now, isGhostMode));
-    userMarker.openPopup();
   } else {
     userMarker.setLatLng([latitude, longitude]);
+    userMarker.setIcon(createZenlyMarkerIcon(localDisplayName, true, isSosActive, false));
     userMarker.setPopupContent(createSafePopup(localDisplayName, true, now, isGhostMode));
   }
 
@@ -814,7 +848,7 @@ function onLocationUpdate(position) {
   }
 
   if (!hasCenteredOnce) {
-    map.setView([latitude, longitude], 15);
+    map.setView([latitude, longitude], 16);
     hasCenteredOnce = true;
   }
 
@@ -908,13 +942,17 @@ function stopLocationSharing(notifyServer = true) {
     map.removeLayer(userGhostCircle);
     userGhostCircle = null;
   }
+  if (userAccuracyCircle) {
+    map.removeLayer(userAccuracyCircle);
+    userAccuracyCircle = null;
+  }
 
   lastEmittedLat = null;
   lastEmittedLng = null;
 
-  btnStartLocation.classList.remove("hidden");
-  btnStopLocation.classList.add("hidden");
-  sharingPill.classList.add("hidden");
+  if (btnStartLocation) btnStartLocation.classList.remove("hidden");
+  if (btnStopLocation) btnStopLocation.classList.add("hidden");
+  if (sharingPill) sharingPill.classList.add("hidden");
 
   if (notifyServer && socket.connected) {
     socket.emit("stop-location");
@@ -1324,16 +1362,16 @@ function getCsrfToken() {
 }
 
 async function openShareSetupModal() {
-  if (!window.__OMW_CONFIG__ || !window.__OMW_CONFIG__.isPersistent) {
-    // Guest mode: 15m default
+  const isGroup = window.__OMW_CONFIG__ && window.__OMW_CONFIG__.isPersistentGroup;
+  const modal = document.getElementById("share-setup-modal");
+  const audienceEl = document.getElementById("share-audience-list");
+
+  if (!isGroup || !modal || !audienceEl) {
+    // Direct share (15m default)
     startLocationSharing();
     startShareCountdown(Date.now() + 15 * 60 * 1000);
     return;
   }
-
-  const modal = document.getElementById("share-setup-modal");
-  const audienceEl = document.getElementById("share-audience-list");
-  if (!modal || !audienceEl) return;
 
   audienceEl.innerHTML = "<span class='text-xs text-slate-400'>Loading your groups...</span>";
   modal.classList.remove("hidden");
