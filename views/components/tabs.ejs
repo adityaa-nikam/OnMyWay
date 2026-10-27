@@ -1,0 +1,38 @@
+<%#
+  views/components/tabs.ejs
+  shadcn/ui Segmented Tabs port.
+  Props:
+    - id: string (unique container id)
+    - tabs: Array<{ id: string, label: string, content: string, active?: boolean }>
+    - className: string (optional)
+%>
+<%
+  const tabsId = typeof id !== 'undefined' ? id : 'tabs_' + Math.random().toString(36).slice(2, 8);
+  const tabList = typeof tabs !== 'undefined' && Array.isArray(tabs) ? tabs : [];
+  const extra = typeof className !== 'undefined' ? className : '';
+%>
+<div id="<%= tabsId %>" class="w-full data-tabs-container <%= extra %>">
+  <!-- Tab List / Triggers (Segmented control) -->
+  <div class="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground select-none" role="tablist">
+    <% tabList.forEach((t, i) => { %>
+      <% const isAct = t.active || (i === 0 && !tabList.some(x => x.active)); %>
+      <button type="button" role="tab"
+              aria-selected="<%= isAct ? 'true' : 'false' %>"
+              aria-controls="<%= tabsId %>-panel-<%= t.id %>"
+              data-tab-target="<%= t.id %>"
+              class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 <%= isAct ? 'bg-background text-foreground shadow-subtle' : 'hover:text-foreground' %>">
+        <%= t.label %>
+      </button>
+    <% }) %>
+  </div>
+
+  <!-- Tab Panels -->
+  <div class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+    <% tabList.forEach((t, i) => { %>
+      <% const isAct = t.active || (i === 0 && !tabList.some(x => x.active)); %>
+      <div id="<%= tabsId %>-panel-<%= t.id %>" role="tabpanel" data-tab-panel="<%= t.id %>" class="<%= isAct ? '' : 'hidden' %>">
+        <%- t.content %>
+      </div>
+    <% }) %>
+  </div>
+</div>

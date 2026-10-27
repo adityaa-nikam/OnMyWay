@@ -1,0 +1,17 @@
+<%#
+  views/components/skeleton.ejs
+  shadcn/ui Skeleton pulse placeholder port.
+  Props:
+    - width: string (e.g. "w-full", "w-24")
+    - height: string (e.g. "h-4", "h-10")
+    - circle: boolean (default false)
+    - className: string (optional)
+%>
+<%
+  const w = typeof width !== 'undefined' ? width : 'w-full';
+  const h = typeof height !== 'undefined' ? height : 'h-4';
+  const isCircle = typeof circle !== 'undefined' && circle;
+  const extra = typeof className !== 'undefined' ? className : '';
+  const rounded = isCircle ? 'rounded-full' : 'rounded-md';
+%>
+<div class="animate-pulse bg-muted <%= rounded %> <%= w %> <%= h %> <%= extra %>"></div>

@@ -49,6 +49,13 @@ app.use(groupsRouter);
 app.use(locationRouter);
 app.use(meetupsRouter);
 
+// Dev-only UI Kit route (disabled in production)
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/ui-kit', (req, res) => {
+    res.render('uikit');
+  });
+}
+
 // ---------- HTTP ROUTES ----------
 
 // Home page

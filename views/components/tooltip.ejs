@@ -1,0 +1,28 @@
+<%#
+  views/components/tooltip.ejs
+  shadcn/ui Tooltip port.
+  Props:
+    - text: string (Tooltip message)
+    - trigger: string (HTML or label of the trigger element)
+    - side: "top" | "bottom" | "left" | "right" (default "top")
+    - className: string (optional)
+%>
+<%
+  const tipText = typeof text !== 'undefined' ? text : '';
+  const tipTrigger = typeof trigger !== 'undefined' ? trigger : '';
+  const tipSide = typeof side !== 'undefined' ? side : 'top';
+  const extra = typeof className !== 'undefined' ? className : '';
+
+  const posClasses = {
+    top: "bottom-full left-1/2 -translate-x-1/2 mb-1.5",
+    bottom: "top-full left-1/2 -translate-x-1/2 mt-1.5",
+    left: "right-full top-1/2 -translate-y-1/2 mr-1.5",
+    right: "left-full top-1/2 -translate-y-1/2 ml-1.5"
+  }[tipSide] || "bottom-full left-1/2 -translate-x-1/2 mb-1.5";
+%>
+<div class="group relative inline-flex <%= extra %>">
+  <%- tipTrigger %>
+  <div role="tooltip" class="pointer-events-none absolute z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground shadow-card opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 whitespace-nowrap <%= posClasses %>">
+    <%= tipText %>
+  </div>
+</div>

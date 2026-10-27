@@ -1,0 +1,33 @@
+<%#
+  views/components/select.ejs
+  shadcn/ui Select port in vanilla EJS.
+  Props:
+    - id: string (optional)
+    - name: string (optional)
+    - options: Array<{ value: string, label: string, selected?: boolean }>
+    - disabled: boolean (default false)
+    - className: string (optional)
+    - attrs: string (optional raw attributes)
+%>
+<%
+  const selId = typeof id !== 'undefined' ? `id="${id}"` : '';
+  const selName = typeof name !== 'undefined' ? `name="${name}"` : '';
+  const isDis = typeof disabled !== 'undefined' && disabled ? 'disabled' : '';
+  const optList = typeof options !== 'undefined' && Array.isArray(options) ? options : [];
+  const extra = typeof className !== 'undefined' ? className : '';
+  const rawAttrs = typeof attrs !== 'undefined' ? attrs : '';
+
+  const classes = "flex h-9 w-full appearance-none items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-subtle placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pr-8 relative cursor-pointer " + extra;
+%>
+<div class="relative w-full">
+  <select <%- selId %> <%- selName %> class="<%= classes %>" <%= isDis %> <%- rawAttrs %>>
+    <% optList.forEach((opt) => { %>
+      <option value="<%= opt.value %>" <%= opt.selected ? 'selected' : '' %>>
+        <%= opt.label %>
+      </option>
+    <% }) %>
+  </select>
+  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
+    <svg class="lucide lucide-sm" aria-hidden="true"><use href="/icons/sprite.svg#chevron-down"></use></svg>
+  </div>
+</div>

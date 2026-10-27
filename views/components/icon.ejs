@@ -1,0 +1,19 @@
+<%#
+  views/components/icon.ejs
+  Renders a monochrome Lucide icon from the inlined SVG sprite.
+  Props:
+    - name: string (required, e.g. "map-pin", "users", "shield", "check")
+    - size: "sm" | "default" | "lg" (optional, default "default")
+    - className: string (optional extra classes)
+%>
+<%
+  const iconSizeClass = (typeof size !== 'undefined' && size === 'sm') 
+    ? 'lucide-sm' 
+    : (typeof size !== 'undefined' && size === 'lg') 
+      ? 'lucide-lg' 
+      : '';
+  const iconClasses = ['lucide', iconSizeClass, typeof className !== 'undefined' ? className : ''].filter(Boolean).join(' ');
+%>
+<svg class="<%= iconClasses %>" aria-hidden="true" focusable="false">
+  <use href="/icons/sprite.svg#<%= name %>"></use>
+</svg>

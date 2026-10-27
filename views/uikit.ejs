@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OMW UI Kit — shadcn Neutral Design System</title>
+  <link rel="stylesheet" href="/css/app.css?v=<%= Date.now() %>" />
+  <script defer src="/js/ui/dialog.js"></script>
+  <script defer src="/js/ui/sheet.js"></script>
+  <script defer src="/js/ui/dropdown.js"></script>
+  <script defer src="/js/ui/toast.js"></script>
+  <script defer src="/js/ui/tabs.js"></script>
+</head>
+<body class="bg-background text-foreground min-h-screen">
+  <!-- Toast Viewport -->
+  <%- include('components/toast') %>
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div class="max-w-7xl mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-2 font-semibold tracking-tight text-foreground hover:opacity-80 transition-opacity">
+          <svg class="lucide" aria-hidden="true"><use href="/icons/sprite.svg#zap"></use></svg>
+          <span class="text-sm font-bold">OnMyWay <span class="font-mono text-muted-foreground font-normal">(OMW)</span></span>
+        </a>
+        <div class="h-4 w-px bg-border"></div>
+        <span class="text-xs font-medium text-muted-foreground">Design System • shadcn/ui Neutral</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="/" class="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background shadow-subtle hover:bg-accent hover:text-accent-foreground h-8 px-3">
+          ← Back to App
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-16">
+    <!-- Intro Hero -->
+    <section class="space-y-2">
+      <div class="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
+        <span>Component Showcase</span>
+      </div>
+      <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl text-foreground">Design System & UI Kit</h1>
+      <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
+        A minimalist, sleek, white-monochrome component anatomy inspired by shadcn/ui (neutral theme). Built with Tailwind CSS, EJS partials, and lightweight accessible vanilla JS. Strictly monochrome with semantic weight and shape.
+      </p>
+    </section>
+
+    <!-- 1. Color Palette Tokens -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">1. Neutral Token Palette</h2>
+        <p class="text-xs text-muted-foreground">HSL tokens mapping directly to shadcn/ui specifications.</p>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+        <div class="rounded-lg border border-border p-3 space-y-1.5 bg-card shadow-subtle">
+          <div class="h-8 w-full rounded border border-border bg-background"></div>
+          <div class="text-xs font-semibold text-foreground">Background</div>
+          <div class="text-[10px] text-muted-foreground font-mono">0 0% 100%</div>
+        </div>
+
+        <div class="rounded-lg border border-border p-3 space-y-1.5 bg-card shadow-subtle">
+          <div class="h-8 w-full rounded bg-foreground"></div>
+          <div class="text-xs font-semibold text-foreground">Foreground</div>
+          <div class="text-[10px] text-muted-foreground font-mono">0 0% 3.9%</div>
+        </div>
+
+        <div class="rounded-lg border border-border p-3 space-y-1.5 bg-card shadow-subtle">
+          <div class="h-8 w-full rounded bg-primary"></div>
+          <div class="text-xs font-semibold text-foreground">Primary</div>
+          <div class="text-[10px] text-muted-foreground font-mono">0 0% 9%</div>
+        </div>
+
+        <div class="rounded-lg border border-border p-3 space-y-1.5 bg-card shadow-subtle">
+          <div class="h-8 w-full rounded bg-secondary border border-border"></div>
+          <div class="text-xs font-semibold text-foreground">Secondary</div>
+          <div class="text-[10px] text-muted-foreground font-mono">0 0% 96.1%</div>
+        </div>
+
+        <div class="rounded-lg border border-border p-3 space-y-1.5 bg-card shadow-subtle">
+          <div class="h-8 w-full rounded bg-muted border border-border"></div>
+          <div class="text-xs font-semibold text-foreground">Muted</div>
+          <div class="text-[10px] text-muted-foreground font-mono">0 0% 96.1%</div>
+        </div>
+
+        <div class="rounded-lg border border-border p-3 space-y-1.5 bg-card shadow-subtle">
+          <div class="h-8 w-full rounded bg-destructive"></div>
+          <div class="text-xs font-semibold text-foreground">Destructive (SOS)</div>
+          <div class="text-[10px] text-muted-foreground font-mono">0 84.2% 60.2%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Typography Scale -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">2. Typography Scale</h2>
+        <p class="text-xs text-muted-foreground">Self-hosted Geist/Inter font family with tight tracking on headings.</p>
+      </div>
+
+      <div class="rounded-lg border border-border bg-card p-6 divide-y divide-border space-y-4 shadow-subtle">
+        <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pt-2 first:pt-0">
+          <span class="text-xs font-mono text-muted-foreground w-28">32px / Bold</span>
+          <span class="text-3xl font-extrabold tracking-tight flex-1">Share until you arrive.</span>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pt-4">
+          <span class="text-xs font-mono text-muted-foreground w-28">24px / SemiBold</span>
+          <span class="text-2xl font-semibold tracking-tight flex-1">Weekend Hiking Buddies</span>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pt-4">
+          <span class="text-xs font-mono text-muted-foreground w-28">20px / SemiBold</span>
+          <span class="text-xl font-semibold tracking-tight flex-1">Sunset Trail Rendezvous</span>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pt-4">
+          <span class="text-xs font-mono text-muted-foreground w-28">16px / Medium</span>
+          <span class="text-base font-medium flex-1">Riya started sharing location until 18:30</span>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pt-4">
+          <span class="text-xs font-mono text-muted-foreground w-28">14px / Base UI</span>
+          <span class="text-sm text-foreground flex-1">App UI default body text with calm, crisp readability.</span>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pt-4">
+          <span class="text-xs font-mono text-muted-foreground w-28">12px / Caption</span>
+          <span class="text-xs text-muted-foreground flex-1">Room isolated • Time-boxed sharing • Zero continuous coordinate history</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Buttons & Variants -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">3. Buttons</h2>
+        <p class="text-xs text-muted-foreground">Every shadcn variant across all size scales.</p>
+      </div>
+
+      <div class="rounded-lg border border-border bg-card p-6 space-y-6 shadow-subtle">
+        <!-- Variants -->
+        <div>
+          <h3 class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Variants</h3>
+          <div class="flex flex-wrap items-center gap-3">
+            <%- include('components/button', { text: 'Default (Primary)', variant: 'default' }) %>
+            <%- include('components/button', { text: 'Secondary', variant: 'secondary' }) %>
+            <%- include('components/button', { text: 'Outline', variant: 'outline' }) %>
+            <%- include('components/button', { text: 'Ghost', variant: 'ghost' }) %>
+            <%- include('components/button', { text: 'Destructive', variant: 'destructive', iconLeft: 'alert-triangle' }) %>
+            <%- include('components/button', { text: 'Link Style', variant: 'link' }) %>
+          </div>
+        </div>
+
+        <!-- Sizes & Icons -->
+        <div>
+          <h3 class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Sizes & Icons</h3>
+          <div class="flex flex-wrap items-center gap-3">
+            <%- include('components/button', { text: 'Small', size: 'sm', variant: 'outline' }) %>
+            <%- include('components/button', { text: 'Default Size', size: 'default', variant: 'default' }) %>
+            <%- include('components/button', { text: 'Large Button', size: 'lg', variant: 'outline' }) %>
+            <%- include('components/button', { text: 'With Icon', variant: 'default', iconLeft: 'map-pin' }) %>
+            <%- include('components/button', { text: '', size: 'icon', variant: 'outline', iconLeft: 'plus' }) %>
+            <%- include('components/button', { text: '', size: 'icon', variant: 'ghost', iconLeft: 'settings' }) %>
+            <%- include('components/button', { text: 'Disabled', variant: 'default', disabled: true }) %>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Badges, Avatars & Status Indicators -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">4. Badges & Avatars (State Without Color)</h2>
+        <p class="text-xs text-muted-foreground">Conveying live, paused, offline and arrived status using shape and weight.</p>
+      </div>
+
+      <div class="rounded-lg border border-border bg-card p-6 space-y-6 shadow-subtle">
+        <!-- Badges -->
+        <div>
+          <h3 class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Badges</h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <%- include('components/badge', { text: 'Default Badge', variant: 'default' }) %>
+            <%- include('components/badge', { text: 'Secondary Badge', variant: 'secondary' }) %>
+            <%- include('components/badge', { text: 'Outline Badge', variant: 'outline', icon: 'shield' }) %>
+            <%- include('components/badge', { text: 'SOS Active', variant: 'destructive', icon: 'alert-triangle' }) %>
+            <%- include('components/badge', { text: '12 min away', variant: 'outline', icon: 'clock' }) %>
+            <%- include('components/badge', { text: 'Arrived', variant: 'default', icon: 'check' }) %>
+          </div>
+        </div>
+
+        <!-- Avatars -->
+        <div>
+          <h3 class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Avatars with Presence Dots</h3>
+          <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+              <%- include('components/avatar', { name: 'Aditya Nikam', status: 'live', size: 'lg' }) %>
+              <div class="text-xs">
+                <span class="font-semibold block">Live Sharing</span>
+                <span class="text-muted-foreground">Pulsing primary dot</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <%- include('components/avatar', { name: 'Riya Sharma', status: 'paused', size: 'default' }) %>
+              <div class="text-xs">
+                <span class="font-semibold block">Location Paused</span>
+                <span class="text-muted-foreground">Hollow grey ring</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <%- include('components/avatar', { name: 'Manish Kumar', status: 'offline', size: 'default' }) %>
+              <div class="text-xs">
+                <span class="font-semibold block">Offline</span>
+                <span class="text-muted-foreground">Muted dot</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Form Elements -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">5. Form Controls</h2>
+        <p class="text-xs text-muted-foreground">Inputs, textarea, select, switch, and checkbox controls.</p>
+      </div>
+
+      <div class="rounded-lg border border-border bg-card p-6 shadow-subtle">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Text Input -->
+          <div class="space-y-1.5">
+            <%- include('components/label', { forId: 'demo-name', text: 'Display Name', required: true }) %>
+            <%- include('components/input', { id: 'demo-name', placeholder: 'e.g. Alex Rivera' }) %>
+          </div>
+
+          <!-- Email Input -->
+          <div class="space-y-1.5">
+            <%- include('components/label', { forId: 'demo-email', text: 'Email Address' }) %>
+            <%- include('components/input', { id: 'demo-email', type: 'email', placeholder: 'alex@example.com' }) %>
+          </div>
+
+          <!-- Select -->
+          <div class="space-y-1.5">
+            <%- include('components/label', { text: 'Share Duration' }) %>
+            <%- include('components/select', {
+              options: [
+                { value: '15m', label: '15 minutes — Quick errand' },
+                { value: '1h', label: '1 hour — Commute or trip', selected: true },
+                { value: '8h', label: '8 hours — Full workday' },
+                { value: 'until_arrive', label: 'Until I arrive — Stops at destination' },
+                { value: 'until_stop', label: 'Until I stop — Manual stop' }
+              ]
+            }) %>
+          </div>
+
+          <!-- Textarea -->
+          <div class="space-y-1.5">
+            <%- include('components/label', { text: 'Status Note' }) %>
+            <%- include('components/textarea', { placeholder: 'Add a brief note for your group...' }) %>
+          </div>
+
+          <!-- Toggles & Checkbox -->
+          <div class="space-y-3 pt-2">
+            <div>
+              <%- include('components/switch', { id: 'demo-sw1', label: 'Auto-stop sharing when I arrive at destination', checked: true }) %>
+            </div>
+            <div>
+              <%- include('components/switch', { id: 'demo-sw2', label: 'Mute non-urgent chat notifications' }) %>
+            </div>
+            <div>
+              <%- include('components/checkbox', { id: 'demo-cb1', label: 'Attach my current location pin (24h retention)', checked: true }) %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Progress & SOS Hold Demonstration -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">6. Progress & SOS Emergency Ring</h2>
+        <p class="text-xs text-muted-foreground">Linear indicators and 3-second radial hold-to-confirm progress ring.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Linear Progress -->
+        <div class="rounded-lg border border-border bg-card p-6 space-y-4 shadow-subtle">
+          <h3 class="text-sm font-semibold">Linear Progress</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs text-muted-foreground">
+              <span>Time remaining</span>
+              <span>45%</span>
+            </div>
+            <%- include('components/progress', { value: 45 }) %>
+          </div>
+          <div class="space-y-2 pt-2">
+            <div class="flex justify-between text-xs text-muted-foreground">
+              <span>Destructive progress</span>
+              <span>80%</span>
+            </div>
+            <%- include('components/progress', { value: 80, destructive: true }) %>
+          </div>
+        </div>
+
+        <!-- Radial Progress & SOS Trigger -->
+        <div class="rounded-lg border border-border bg-card p-6 space-y-4 shadow-subtle flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-semibold">SOS Hold-to-Confirm (3s Radial Progress)</h3>
+            <p class="text-xs text-muted-foreground mt-1">Single tap does nothing. Radial ring fills smoothly over 3 seconds.</p>
+          </div>
+
+          <div class="flex items-center gap-6 pt-2">
+            <div class="relative inline-flex items-center justify-center">
+              <%- include('components/progress', { id: 'demo-sos-ring', radial: true, value: 0, destructive: true, size: 52, strokeWidth: 4 }) %>
+              <button type="button" id="demo-sos-btn"
+                      class="absolute inset-1.5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center font-bold text-xs shadow-subtle hover:bg-destructive/90 transition select-none cursor-pointer">
+                SOS
+              </button>
+            </div>
+            <div class="text-xs text-muted-foreground">
+              <span id="demo-sos-status" class="font-medium text-foreground block">Hold button for 3 seconds</span>
+              <span>Rate limited to 60s cooldown</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Alerts & Skeletons -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">7. Alerts & Skeletons</h2>
+        <p class="text-xs text-muted-foreground">Calm callouts and loading state placeholders.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Alerts -->
+        <div class="space-y-3">
+          <%- include('components/alert', {
+            title: 'Time-Boxed Sharing Active',
+            description: 'Your location is currently shared with Weekend Buddies. Sharing ends automatically in 42 minutes.',
+            icon: 'clock'
+          }) %>
+
+          <%- include('components/alert', {
+            variant: 'destructive',
+            title: 'Emergency SOS Broadcast',
+            description: 'Emergency beacon sent to all group members. Push alerts dispatched.',
+            icon: 'alert-triangle'
+          }) %>
+        </div>
+
+        <!-- Skeletons -->
+        <div class="rounded-lg border border-border bg-card p-6 space-y-4 shadow-subtle">
+          <div class="flex items-center gap-3">
+            <%- include('components/skeleton', { width: 'w-10', height: 'h-10', circle: true }) %>
+            <div class="space-y-1.5 flex-1">
+              <%- include('components/skeleton', { width: 'w-1/3', height: 'h-4' }) %>
+              <%- include('components/skeleton', { width: 'w-1/2', height: 'h-3' }) %>
+            </div>
+          </div>
+          <%- include('components/skeleton', { width: 'w-full', height: 'h-8' }) %>
+          <%- include('components/skeleton', { width: 'w-3/4', height: 'h-4' }) %>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Interactive Tabs & Scroll Area -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">8. Segmented Tabs & Scroll Area</h2>
+        <p class="text-xs text-muted-foreground">Monochrome tab switcher and custom slim scrollbar.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Tabs -->
+        <div class="rounded-lg border border-border bg-card p-6 shadow-subtle">
+          <%- include('components/tabs', {
+            id: 'demo-tabs',
+            tabs: [
+              { id: 'tab-overview', label: 'Overview', content: '<p class="text-xs text-muted-foreground leading-relaxed pt-2">OnMyWay provides zero-surveillance live location sharing with persistent account-based groups.</p>', active: true },
+              { id: 'tab-safety', label: 'Safety', content: '<p class="text-xs text-muted-foreground leading-relaxed pt-2">SOS hold-to-confirm, single-pin status chips, and exact server-enforced expiry sweeps.</p>' },
+              { id: 'tab-meetup', label: 'Meetups', content: '<p class="text-xs text-muted-foreground leading-relaxed pt-2">Server-computed ETAs with straight-line fallback, 45s cache, and arrival geofencing.</p>' }
+            ]
+          }) %>
+        </div>
+
+        <!-- Scroll Area -->
+        <%- include('components/scroll-area', {
+          height: 'h-[180px]',
+          content: `
+            <div class="space-y-3">
+              <div class="flex justify-between text-xs py-1.5 border-b border-border"><span>Location share started (1 hour)</span><span class="text-muted-foreground font-mono">14:15</span></div>
+              <div class="flex justify-between text-xs py-1.5 border-b border-border"><span>Destination set to "Summit Peak"</span><span class="text-muted-foreground font-mono">14:16</span></div>
+              <div class="flex justify-between text-xs py-1.5 border-b border-border"><span>Status chip: "On my way"</span><span class="text-muted-foreground font-mono">14:20</span></div>
+              <div class="flex justify-between text-xs py-1.5 border-b border-border"><span>Share extended (+15 min)</span><span class="text-muted-foreground font-mono">14:55</span></div>
+              <div class="flex justify-between text-xs py-1.5 border-b border-border"><span>Arrived at destination geofence</span><span class="text-muted-foreground font-mono">15:10</span></div>
+              <div class="flex justify-between text-xs py-1.5"><span>Location share stopped</span><span class="text-muted-foreground font-mono">15:10</span></div>
+            </div>
+          `
+        }) %>
+      </div>
+    </section>
+
+    <!-- 9. Interactive Overlays (Dialog, Sheet, Dropdown, Toasts) -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">9. Interactive Overlays</h2>
+        <p class="text-xs text-muted-foreground">Dialog modal, slide-over sheet, popover dropdown, and toast queue.</p>
+      </div>
+
+      <div class="rounded-lg border border-border bg-card p-6 shadow-subtle">
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Dialog Trigger -->
+          <button type="button" data-dialog-open="demo-dialog"
+                  class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background shadow-subtle hover:bg-accent h-9 px-4 cursor-pointer">
+            <svg class="lucide lucide-sm mr-2" aria-hidden="true"><use href="/icons/sprite.svg#external-link"></use></svg>
+            Open Dialog Modal
+          </button>
+
+          <!-- Sheet Trigger -->
+          <button type="button" data-sheet-open="demo-sheet"
+                  class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background shadow-subtle hover:bg-accent h-9 px-4 cursor-pointer">
+            <svg class="lucide lucide-sm mr-2" aria-hidden="true"><use href="/icons/sprite.svg#chevron-right"></use></svg>
+            Open Slide-over Sheet
+          </button>
+
+          <!-- Dropdown Trigger -->
+          <%- include('components/dropdown', {
+            id: 'demo-dropdown-menu',
+            trigger: `
+              <button type="button" class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background shadow-subtle hover:bg-accent h-9 px-4 cursor-pointer">
+                Actions
+                <svg class="lucide lucide-sm ml-2" aria-hidden="true"><use href="/icons/sprite.svg#chevron-down"></use></svg>
+              </button>
+            `,
+            items: [
+              { label: 'Group Settings', icon: 'settings', action: 'settings' },
+              { label: 'Invite Members', icon: 'share-2', action: 'invite' },
+              { separator: true },
+              { label: 'Leave Group', icon: 'log-out', destructive: true, action: 'leave' }
+            ]
+          }) %>
+
+          <!-- Toast Trigger Buttons -->
+          <button type="button" onclick="toast({ title: 'Location sharing started', description: 'Sharing with 4 people until 16:30' })"
+                  class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground shadow-subtle hover:bg-primary/90 h-9 px-4 cursor-pointer">
+            Trigger Toast
+          </button>
+
+          <button type="button" onclick="toast({ title: 'Destructive Alert', description: 'Emergency beacon was broadcast to all members', variant: 'destructive' })"
+                  class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-destructive text-destructive-foreground shadow-subtle hover:bg-destructive/90 h-9 px-4 cursor-pointer">
+            Destructive Toast
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10. Empty State Pattern -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">10. Empty State</h2>
+        <p class="text-xs text-muted-foreground">Clear neutral messaging when lists or groups are empty.</p>
+      </div>
+
+      <%- include('components/empty-state', {
+        icon: 'map-pin',
+        title: 'No active location shares',
+        description: 'None of your group members are currently sharing their location. Start a share when you set off.',
+        action: '<button type="button" class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-primary text-primary-foreground shadow-subtle hover:bg-primary/90 h-8 px-3">📍 Start Sharing</button>'
+      }) %>
+    </section>
+
+    <!-- 11. Lucide Icon Sprite Gallery -->
+    <section class="space-y-4">
+      <div class="border-b border-border pb-2">
+        <h2 class="text-lg font-semibold tracking-tight">11. Lucide Monochrome SVG Sprite</h2>
+        <p class="text-xs text-muted-foreground">Self-hosted local SVG symbols (1.5 stroke, no external CDN).</p>
+      </div>
+
+      <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+        <% const icons = ['zap', 'map-pin', 'message-square', 'users', 'plus', 'settings', 'log-out', 'copy', 'share-2', 'shield', 'alert-triangle', 'alert-circle', 'check', 'x', 'clock', 'calendar', 'compass', 'send', 'refresh-cw', 'battery', 'battery-charging', 'more-horizontal', 'bell', 'search', 'external-link', 'sparkles', 'navigation', 'trash-2', 'info', 'locate']; %>
+        <% icons.forEach((ico) => { %>
+          <div class="flex flex-col items-center justify-center p-3 rounded-lg border border-border bg-card shadow-subtle hover:bg-accent transition-colors">
+            <svg class="lucide lucide-lg text-foreground mb-1.5" aria-hidden="true"><use href="/icons/sprite.svg#<%= ico %>"></use></svg>
+            <span class="text-[11px] font-mono text-muted-foreground truncate max-w-full"><%= ico %></span>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+  </main>
+
+  <!-- Demo Modal Dialog Instance -->
+  <%- include('components/dialog', {
+    id: 'demo-dialog',
+    title: 'Confirm Location Share Expiry',
+    description: 'Are you sure you want to stop sharing your location with Weekend Buddies?',
+    content: '<p class="text-xs text-muted-foreground">Your active location share will terminate immediately and all viewers will see your pin disappear.</p>',
+    footer: `
+      <button type="button" data-dialog-close="demo-dialog" class="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background shadow-subtle hover:bg-accent h-8 px-3 cursor-pointer">Cancel</button>
+      <button type="button" data-dialog-close="demo-dialog" class="inline-flex items-center justify-center rounded-md text-xs font-medium bg-destructive text-destructive-foreground shadow-subtle hover:bg-destructive/90 h-8 px-3 cursor-pointer">Stop Sharing</button>
+    `
+  }) %>
+
+  <!-- Demo Slide-Over Sheet Instance -->
+  <%- include('components/sheet', {
+    id: 'demo-sheet',
+    title: 'Group Members & Presence',
+    description: 'Active participants in this group.',
+    content: `
+      <div class="space-y-3 pt-2">
+        <div class="flex items-center justify-between py-2 border-b border-border">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-primary"></span>
+            <span class="text-xs font-medium">Aditya Nikam (Owner)</span>
+          </div>
+          <span class="text-[11px] text-muted-foreground">Live GPS</span>
+        </div>
+        <div class="flex items-center justify-between py-2 border-b border-border">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full border border-muted-foreground"></span>
+            <span class="text-xs font-medium">Riya Sharma</span>
+          </div>
+          <span class="text-[11px] text-muted-foreground">Paused</span>
+        </div>
+      </div>
+    `
+  }) %>
+
+  <!-- Interactive Demo SOS Hold Logic -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sosBtn = document.getElementById('demo-sos-btn');
+      const sosCircle = document.querySelector('#demo-sos-ring [data-progress-circle]');
+      const sosStatus = document.getElementById('demo-sos-status');
+      if (!sosBtn || !sosCircle || !sosStatus) return;
+
+      let holdTimer = null;
+      let startTime = null;
+      let animFrame = null;
+      const HOLD_DURATION = 3000;
+      const circumference = parseFloat(sosCircle.getAttribute('stroke-dasharray')) || 150;
+
+      function updateProgress() {
+        if (!startTime) return;
+        const elapsed = Date.now() - startTime;
+        const pct = Math.min(elapsed / HOLD_DURATION, 1);
+        const offset = circumference - pct * circumference;
+        sosCircle.style.strokeDashoffset = offset;
+
+        if (pct < 1) {
+          sosStatus.textContent = 'Hold: ' + Math.ceil((HOLD_DURATION - elapsed) / 1000) + 's remaining...';
+          animFrame = requestAnimationFrame(updateProgress);
+        } else {
+          sosStatus.textContent = '🚨 SOS TRIGGERED!';
+          sosStatus.classList.add('text-destructive');
+          window.toast({
+            title: 'Emergency SOS Activated',
+            description: 'Hold requirement met. Emergency beacon sent.',
+            variant: 'destructive'
+          });
+          resetProgress();
+        }
+      }
+
+      function startHold(e) {
+        e.preventDefault();
+        startTime = Date.now();
+        animFrame = requestAnimationFrame(updateProgress);
+      }
+
+      function resetProgress() {
+        if (animFrame) cancelAnimationFrame(animFrame);
+        startTime = null;
+        sosCircle.style.strokeDashoffset = circumference;
+        setTimeout(() => {
+          sosStatus.textContent = 'Hold button for 3 seconds';
+          sosStatus.classList.remove('text-destructive');
+        }, 1500);
+      }
+
+      sosBtn.addEventListener('mousedown', startHold);
+      sosBtn.addEventListener('touchstart', startHold);
+      window.addEventListener('mouseup', resetProgress);
+      window.addEventListener('touchend', resetProgress);
+    });
+  </script>
+</body>
+</html>

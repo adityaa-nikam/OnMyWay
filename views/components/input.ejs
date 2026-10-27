@@ -1,0 +1,30 @@
+<%#
+  views/components/input.ejs
+  shadcn/ui Input port in vanilla EJS.
+  Props:
+    - type: "text" | "email" | "password" | "number" | "search" | "file" (default "text")
+    - id: string (optional)
+    - name: string (optional)
+    - value: string (optional)
+    - placeholder: string (optional)
+    - required: boolean (default false)
+    - disabled: boolean (default false)
+    - readonly: boolean (default false)
+    - className: string (optional)
+    - attrs: string (optional raw attributes)
+%>
+<%
+  const inputType = typeof type !== 'undefined' ? type : 'text';
+  const inputId = typeof id !== 'undefined' ? `id="${id}"` : '';
+  const inputName = typeof name !== 'undefined' ? `name="${name}"` : '';
+  const inputVal = typeof value !== 'undefined' ? `value="${value}"` : '';
+  const inputPlaceholder = typeof placeholder !== 'undefined' ? `placeholder="${placeholder}"` : '';
+  const isReq = typeof required !== 'undefined' && required ? 'required' : '';
+  const isDis = typeof disabled !== 'undefined' && disabled ? 'disabled' : '';
+  const isRo = typeof readonly !== 'undefined' && readonly ? 'readonly' : '';
+  const extra = typeof className !== 'undefined' ? className : '';
+  const rawAttrs = typeof attrs !== 'undefined' ? attrs : '';
+
+  const classes = "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-subtle transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 " + extra;
+%>
+<input <%- inputId %> <%- inputName %> type="<%= inputType %>" <%- inputVal %> <%- inputPlaceholder %> class="<%= classes %>" <%= isReq %> <%= isDis %> <%= isRo %> <%- rawAttrs %> />

@@ -1,0 +1,61 @@
+<%#
+  views/components/button.ejs
+  shadcn/ui Button port in vanilla EJS.
+  Variants:
+    - variant: "default" | "secondary" | "outline" | "ghost" | "destructive" | "link"
+    - size: "default" | "sm" | "lg" | "icon"
+  Props:
+    - text: string (button label)
+    - type: "button" | "submit" | "reset" (default "button")
+    - id: string (optional)
+    - variant: string (default "default")
+    - size: string (default "default")
+    - disabled: boolean (default false)
+    - iconLeft: string (optional Lucide icon name)
+    - iconRight: string (optional Lucide icon name)
+    - className: string (optional extra classes)
+    - attrs: string (optional raw attributes like data-* or aria-*)
+%>
+<%
+  const v = typeof variant !== 'undefined' ? variant : 'default';
+  const s = typeof size !== 'undefined' ? size : 'default';
+  const btnType = typeof type !== 'undefined' ? type : 'button';
+  const isDisabled = typeof disabled !== 'undefined' && disabled;
+  const extra = typeof className !== 'undefined' ? className : '';
+  const rawAttrs = typeof attrs !== 'undefined' ? attrs : '';
+  const btnId = typeof id !== 'undefined' ? `id="${id}"` : '';
+
+  // Base interactive styles
+  const base = "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer";
+
+  // Variant mappings
+  const variantClasses = {
+    default: "bg-primary text-primary-foreground shadow-subtle hover:bg-primary/90",
+    destructive: "bg-destructive text-destructive-foreground shadow-subtle hover:bg-destructive/90",
+    outline: "border border-input bg-background shadow-subtle hover:bg-accent hover:text-accent-foreground",
+    secondary: "bg-secondary text-secondary-foreground shadow-subtle hover:bg-secondary/80",
+    ghost: "hover:bg-accent hover:text-accent-foreground",
+    link: "text-primary underline-offset-4 hover:underline"
+  }[v] || "bg-primary text-primary-foreground shadow-subtle hover:bg-primary/90";
+
+  // Size mappings
+  const sizeClasses = {
+    default: "h-9 px-4 py-2",
+    sm: "h-8 rounded-md px-3 text-xs",
+    lg: "h-10 rounded-md px-8",
+    icon: "h-9 w-9"
+  }[s] || "h-9 px-4 py-2";
+
+  const classes = [base, variantClasses, sizeClasses, extra].filter(Boolean).join(' ');
+%>
+<button <%- btnId %> type="<%= btnType %>" class="<%= classes %>" <%= isDisabled ? 'disabled' : '' %> <%- rawAttrs %>>
+  <% if (typeof iconLeft !== 'undefined' && iconLeft) { %>
+    <svg class="lucide <%= s === 'sm' ? 'lucide-sm mr-1.5' : 'mr-2' %>" aria-hidden="true"><use href="/icons/sprite.svg#<%= iconLeft %>"></use></svg>
+  <% } %>
+  <% if (typeof text !== 'undefined' && text) { %>
+    <span><%= text %></span>
+  <% } %>
+  <% if (typeof iconRight !== 'undefined' && iconRight) { %>
+    <svg class="lucide <%= s === 'sm' ? 'lucide-sm ml-1.5' : 'ml-2' %>" aria-hidden="true"><use href="/icons/sprite.svg#<%= iconRight %>"></use></svg>
+  <% } %>
+</button>

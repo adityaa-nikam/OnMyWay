@@ -1,0 +1,31 @@
+<%#
+  views/components/empty-state.ejs
+  shadcn/ui Empty State pattern.
+  Props:
+    - icon: string (optional Lucide icon name, default "sparkles")
+    - title: string (required)
+    - description: string (required)
+    - action: string (optional button/link HTML)
+    - className: string (optional)
+%>
+<%
+  const emptyIcon = typeof icon !== 'undefined' ? icon : 'sparkles';
+  const emptyTitle = typeof title !== 'undefined' ? title : 'Nothing here yet';
+  const emptyDesc = typeof description !== 'undefined' ? description : '';
+  const emptyAction = typeof action !== 'undefined' ? action : '';
+  const extra = typeof className !== 'undefined' ? className : '';
+%>
+<div class="flex flex-col items-center justify-center p-8 text-center rounded-lg border border-dashed border-border bg-card/50 <%= extra %>">
+  <div class="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-4">
+    <svg class="lucide lucide-lg" aria-hidden="true"><use href="/icons/sprite.svg#<%= emptyIcon %>"></use></svg>
+  </div>
+  <h4 class="text-base font-semibold text-foreground"><%= emptyTitle %></h4>
+  <% if (emptyDesc) { %>
+    <p class="mt-1 text-xs text-muted-foreground max-w-xs leading-relaxed"><%= emptyDesc %></p>
+  <% } %>
+  <% if (emptyAction) { %>
+    <div class="mt-4">
+      <%- emptyAction %>
+    </div>
+  <% } %>
+</div>

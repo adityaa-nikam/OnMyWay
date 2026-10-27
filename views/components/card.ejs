@@ -1,0 +1,39 @@
+<%#
+  views/components/card.ejs
+  shadcn/ui Card container port.
+  Props:
+    - title: string (optional)
+    - description: string (optional)
+    - content: string (optional raw HTML content)
+    - footer: string (optional raw HTML footer)
+    - className: string (optional)
+%>
+<%
+  const cardTitle = typeof title !== 'undefined' ? title : '';
+  const cardDesc = typeof description !== 'undefined' ? description : '';
+  const cardContent = typeof content !== 'undefined' ? content : '';
+  const cardFooter = typeof footer !== 'undefined' ? footer : '';
+  const extra = typeof className !== 'undefined' ? className : '';
+%>
+<div class="rounded-lg border border-border bg-card text-card-foreground shadow-subtle <%= extra %>">
+  <% if (cardTitle || cardDesc) { %>
+    <div class="flex flex-col space-y-1.5 p-6">
+      <% if (cardTitle) { %>
+        <h3 class="text-xl font-semibold leading-none tracking-tight"><%= cardTitle %></h3>
+      <% } %>
+      <% if (cardDesc) { %>
+        <p class="text-sm text-muted-foreground"><%= cardDesc %></p>
+      <% } %>
+    </div>
+  <% } %>
+  <% if (cardContent) { %>
+    <div class="p-6 pt-0">
+      <%- cardContent %>
+    </div>
+  <% } %>
+  <% if (cardFooter) { %>
+    <div class="flex items-center p-6 pt-0 border-t border-border mt-2">
+      <%- cardFooter %>
+    </div>
+  <% } %>
+</div>

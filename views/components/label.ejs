@@ -1,0 +1,19 @@
+<%#
+  views/components/label.ejs
+  shadcn/ui Label port in vanilla EJS.
+  Props:
+    - forId: string (target input id)
+    - text: string (label text)
+    - required: boolean (optional indicator)
+    - className: string (optional)
+%>
+<%
+  const target = typeof forId !== 'undefined' ? `for="${forId}"` : '';
+  const labelText = typeof text !== 'undefined' ? text : '';
+  const isReq = typeof required !== 'undefined' && required;
+  const extra = typeof className !== 'undefined' ? className : '';
+  const classes = "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none " + extra;
+%>
+<label <%- target %> class="<%= classes %>">
+  <%= labelText %><% if (isReq) { %><span class="text-destructive ml-0.5">*</span><% } %>
+</label>

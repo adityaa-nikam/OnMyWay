@@ -1,0 +1,30 @@
+<%#
+  views/components/toast.ejs
+  shadcn/Sonner-style toast container in vanilla EJS.
+  Renders fixed notification viewport and template.
+%>
+<div id="omw-toast-viewport"
+     role="region"
+     aria-label="Notifications"
+     aria-live="polite"
+     class="fixed bottom-0 right-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col sm:max-w-[420px] pointer-events-none gap-2">
+  <!-- Toasts injected dynamically by public/js/ui/toast.js using textContent only -->
+</div>
+
+<!-- Accessible Toast Template (Cloned safely in JS) -->
+<template id="omw-toast-template">
+  <div class="pointer-events-auto relative flex w-full items-center justify-between space-x-2 overflow-hidden rounded-md border border-border bg-card p-4 pr-6 shadow-popover transition-all duration-150 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-bottom-full sm:data-[state=open]:slide-in-from-bottom-full">
+    <div class="flex items-start gap-3 w-full">
+      <div data-toast-icon class="mt-0.5 shrink-0 text-foreground">
+        <svg class="lucide lucide-sm" aria-hidden="true"><use href="/icons/sprite.svg#info"></use></svg>
+      </div>
+      <div class="grid gap-1">
+        <div data-toast-title class="text-sm font-semibold text-foreground"></div>
+        <div data-toast-description class="text-xs text-muted-foreground leading-relaxed"></div>
+      </div>
+    </div>
+    <button type="button" data-toast-close class="absolute right-1 top-1 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-1 group-hover:opacity-100">
+      <svg class="lucide lucide-sm" aria-hidden="true"><use href="/icons/sprite.svg#x"></use></svg>
+    </button>
+  </div>
+</template>

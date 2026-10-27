@@ -1,0 +1,29 @@
+<%#
+  views/components/switch.ejs
+  shadcn/ui Switch toggle in vanilla EJS.
+  Props:
+    - id: string (optional)
+    - name: string (optional)
+    - checked: boolean (default false)
+    - disabled: boolean (default false)
+    - label: string (optional accompanying text)
+    - className: string (optional)
+%>
+<%
+  const swId = typeof id !== 'undefined' ? id : 'switch_' + Math.random().toString(36).slice(2, 8);
+  const swName = typeof name !== 'undefined' ? `name="${name}"` : '';
+  const isChecked = typeof checked !== 'undefined' && checked;
+  const isDis = typeof disabled !== 'undefined' && disabled;
+  const labelText = typeof label !== 'undefined' ? label : '';
+  const extra = typeof className !== 'undefined' ? className : '';
+%>
+<label for="<%= swId %>" class="inline-flex items-center gap-3 cursor-pointer select-none <%= isDis ? 'opacity-50 cursor-not-allowed' : '' %> <%= extra %>">
+  <div class="relative inline-flex items-center">
+    <input type="checkbox" id="<%= swId %>" <%- swName %> class="peer sr-only" <%= isChecked ? 'checked' : '' %> <%= isDis ? 'disabled' : '' %> role="switch" aria-checked="<%= isChecked ? 'true' : 'false' %>" />
+    <div class="h-5 w-9 rounded-full bg-input transition-colors peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-checked:bg-primary"></div>
+    <div class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-background transition-transform peer-checked:translate-x-4 shadow-subtle"></div>
+  </div>
+  <% if (labelText) { %>
+    <span class="text-sm font-medium leading-none"><%= labelText %></span>
+  <% } %>
+</label>

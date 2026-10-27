@@ -1,0 +1,67 @@
+<%#
+  views/components/sheet.ejs
+  shadcn/ui Sheet slide-over panel port (drawer / bottom sheet).
+  Props:
+    - id: string (required sheet element id)
+    - side: "right" | "bottom" | "left" | "top" (default "right")
+    - title: string (sheet title)
+    - description: string (sheet description)
+    - content: string (raw HTML content)
+    - footer: string (optional footer actions)
+    - className: string (optional)
+%>
+<%
+  const sheetId = typeof id !== 'undefined' ? id : 'sheet_' + Math.random().toString(36).slice(2, 8);
+  const sheetSide = typeof side !== 'undefined' ? side : 'right';
+  const sheetTitle = typeof title !== 'undefined' ? title : '';
+  const sheetDesc = typeof description !== 'undefined' ? description : '';
+  const sheetContent = typeof content !== 'undefined' ? content : '';
+  const sheetFooter = typeof footer !== 'undefined' ? footer : '';
+  const extra = typeof className !== 'undefined' ? className : '';
+
+  const sideClasses = {
+    right: "inset-y-0 right-0 h-full w-3/4 sm:max-w-sm border-l",
+    left: "inset-y-0 left-0 h-full w-3/4 sm:max-w-sm border-r",
+    bottom: "inset-x-0 bottom-0 border-t rounded-t-xl max-h-[85vh]",
+    top: "inset-x-0 top-0 border-b rounded-b-xl"
+  }[sheetSide] || "inset-y-0 right-0 h-full w-3/4 sm:max-w-sm border-l";
+%>
+<div id="<%= sheetId %>"
+     role="dialog"
+     aria-modal="true"
+     class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden data-[state=open]:block data-[state=closed]:hidden">
+  
+  <div data-sheet-panel
+       class="fixed z-50 gap-4 bg-background p-6 shadow-popover transition ease-in-out border-border overflow-y-auto <%= sideClasses %> <%= extra %>">
+    
+    <!-- Close Button -->
+    <button type="button"
+            data-sheet-close="<%= sheetId %>"
+            aria-label="Close sheet"
+            class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer">
+      <svg class="lucide lucide-sm" aria-hidden="true"><use href="/icons/sprite.svg#x"></use></svg>
+    </button>
+
+    <!-- Header -->
+    <div class="flex flex-col space-y-2 text-left mb-4">
+      <% if (sheetTitle) { %>
+        <h3 class="text-lg font-semibold text-foreground"><%= sheetTitle %></h3>
+      <% } %>
+      <% if (sheetDesc) { %>
+        <p class="text-sm text-muted-foreground"><%= sheetDesc %></p>
+      <% } %>
+    </div>
+
+    <!-- Body -->
+    <div class="py-2 text-sm text-foreground">
+      <%- sheetContent %>
+    </div>
+
+    <!-- Footer -->
+    <% if (sheetFooter) { %>
+      <div class="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 border-t border-border mt-4">
+        <%- sheetFooter %>
+      </div>
+    <% } %>
+  </div>
+</div>

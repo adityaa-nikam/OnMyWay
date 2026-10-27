@@ -1,0 +1,18 @@
+<%#
+  views/components/scroll-area.ejs
+  shadcn/ui ScrollArea container with custom slim monochrome scrollbar.
+  Props:
+    - height: string (e.g. "h-[200px]", "h-full")
+    - content: string (raw HTML content)
+    - className: string (optional)
+%>
+<%
+  const h = typeof height !== 'undefined' ? height : 'h-full';
+  const scrollContent = typeof content !== 'undefined' ? content : '';
+  const extra = typeof className !== 'undefined' ? className : '';
+%>
+<div class="relative overflow-hidden rounded-md border border-border <%= h %> <%= extra %>">
+  <div class="h-full w-full overflow-y-auto p-4 pr-3.5 focus-visible:outline-none">
+    <%- scrollContent %>
+  </div>
+</div>

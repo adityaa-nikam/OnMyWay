@@ -1,0 +1,53 @@
+<%#
+  views/components/dropdown.ejs
+  shadcn/ui Dropdown Menu / Popover port.
+  Props:
+    - id: string (unique dropdown id)
+    - trigger: string (raw HTML for trigger button)
+    - items: Array<{ label?: string, href?: string, icon?: string, action?: string, destructive?: boolean, separator?: boolean }>
+    - className: string (optional)
+%>
+<%
+  const ddId = typeof id !== 'undefined' ? id : 'dd_' + Math.random().toString(36).slice(2, 8);
+  const ddTrigger = typeof trigger !== 'undefined' ? trigger : '';
+  const ddItems = typeof items !== 'undefined' && Array.isArray(items) ? items : [];
+  const extra = typeof className !== 'undefined' ? className : '';
+%>
+<div id="<%= ddId %>" class="relative inline-block text-left <%= extra %>" data-dropdown>
+  <div data-dropdown-trigger>
+    <%- ddTrigger %>
+  </div>
+
+  <div data-dropdown-menu
+       role="menu"
+       aria-orientation="vertical"
+       class="absolute right-0 z-50 mt-1.5 w-52 origin-top-right rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-popover hidden focus:outline-none">
+    <% ddItems.forEach((item) => { %>
+      <% if (item.separator) { %>
+        <div class="-mx-1 my-1 h-px bg-border" role="separator"></div>
+      <% } else { %>
+        <% const isDest = item.destructive ? 'text-destructive focus:bg-destructive/10 focus:text-destructive' : 'hover:bg-accent hover:text-accent-foreground'; %>
+        <% if (item.href) { %>
+          <a href="<%= item.href %>"
+             role="menuitem"
+             class="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs font-medium outline-none transition-colors <%= isDest %>">
+            <% if (item.icon) { %>
+              <svg class="lucide lucide-sm mr-2" aria-hidden="true"><use href="/icons/sprite.svg#<%= item.icon %>"></use></svg>
+            <% } %>
+            <span><%= item.label %></span>
+          </a>
+        <% } else { %>
+          <button type="button"
+                  data-action="<%= item.action || '' %>"
+                  role="menuitem"
+                  class="relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs font-medium outline-none transition-colors text-left <%= isDest %>">
+            <% if (item.icon) { %>
+              <svg class="lucide lucide-sm mr-2" aria-hidden="true"><use href="/icons/sprite.svg#<%= item.icon %>"></use></svg>
+            <% } %>
+            <span><%= item.label %></span>
+          </button>
+        <% } %>
+      <% } %>
+    <% }) %>
+  </div>
+</div>

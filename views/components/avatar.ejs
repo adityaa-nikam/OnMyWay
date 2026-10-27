@@ -1,0 +1,41 @@
+<%#
+  views/components/avatar.ejs
+  shadcn/ui Avatar port with monochrome initials and status dot.
+  Props:
+    - name: string (User display name)
+    - size: "sm" | "default" | "lg" (default "default")
+    - status: "live" | "paused" | "offline" | "none" (default "none")
+    - className: string (optional)
+%>
+<%
+  const userName = typeof name !== 'undefined' && name ? name.trim() : 'User';
+  const initials = userName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0] ? w[0].toUpperCase() : '')
+    .join('') || 'U';
+
+  const s = typeof size !== 'undefined' ? size : 'default';
+  const st = typeof status !== 'undefined' ? status : 'none';
+  const extra = typeof className !== 'undefined' ? className : '';
+
+  const sizeClasses = {
+    sm: "h-7 w-7 text-[11px]",
+    default: "h-9 w-9 text-xs",
+    lg: "h-12 w-12 text-sm"
+  }[s] || "h-9 w-9 text-xs";
+
+  const statusClasses = {
+    live: "bg-primary ring-2 ring-background",
+    paused: "bg-background border-2 border-muted-foreground ring-2 ring-background",
+    offline: "bg-muted-foreground/40 ring-2 ring-background"
+  }[st] || "";
+%>
+<div class="relative inline-flex shrink-0 <%= extra %>">
+  <div class="flex items-center justify-center rounded-full bg-muted font-medium text-muted-foreground border border-border select-none <%= sizeClasses %>">
+    <span><%= initials %></span>
+  </div>
+  <% if (st !== 'none') { %>
+    <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full <%= statusClasses %>" aria-label="Status: <%= st %>"></span>
+  <% } %>
+</div>

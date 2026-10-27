@@ -1,0 +1,54 @@
+<%#
+  views/components/progress.ejs
+  shadcn/ui Progress bar & Radial Progress Ring port.
+  Props:
+    - value: number (0 - 100, default 0)
+    - max: number (default 100)
+    - radial: boolean (default false)
+    - size: number (radial diameter in px, default 40)
+    - strokeWidth: number (radial stroke px, default 3)
+    - destructive: boolean (default false, for SOS)
+    - id: string (optional)
+    - className: string (optional)
+%>
+<%
+  const val = Math.min(Math.max(typeof value !== 'undefined' ? Number(value) : 0, 0), 100);
+  const isRadial = typeof radial !== 'undefined' && radial;
+  const isDestructive = typeof destructive !== 'undefined' && destructive;
+  const progId = typeof id !== 'undefined' ? `id="${id}"` : '';
+  const extra = typeof className !== 'undefined' ? className : '';
+
+  if (isRadial) {
+    const s = typeof size !== 'undefined' ? Number(size) : 44;
+    const sw = typeof strokeWidth !== 'undefined' ? Number(strokeWidth) : 3.5;
+    const radius = (s - sw) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (val / 100) * circumference;
+%>
+  <div <%- progId %> class="relative inline-flex items-center justify-center <%= extra %>" style="width: <%= s %>px; height: <%= s %>px;">
+    <svg width="<%= s %>" height="<%= s %>" class="transform -rotate-90">
+      <!-- Background Track -->
+      <circle cx="<%= s/2 %>" cy="<%= s/2 %>" r="<%= radius %>"
+              stroke="hsl(var(--muted))"
+              stroke-width="<%= sw %>"
+              fill="transparent" />
+      <!-- Animated Progress Indicator -->
+      <circle data-progress-circle
+              cx="<%= s/2 %>" cy="<%= s/2 %>" r="<%= radius %>"
+              stroke="<%= isDestructive ? 'hsl(var(--destructive))' : 'hsl(var(--primary))' %>"
+              stroke-width="<%= sw %>"
+              stroke-linecap="round"
+              fill="transparent"
+              stroke-dasharray="<%= circumference %>"
+              stroke-dashoffset="<%= offset %>"
+              style="transition: stroke-dashoffset 150ms ease;" />
+    </svg>
+  </div>
+<% } else { %>
+  <div <%- progId %> role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= val %>"
+       class="relative h-2 w-full overflow-hidden rounded-full bg-secondary <%= extra %>">
+    <div data-progress-bar
+         class="h-full w-full flex-1 transition-all duration-150 <%= isDestructive ? 'bg-destructive' : 'bg-primary' %>"
+         style="transform: translateX(-<%= 100 - val %>%)"></div>
+  </div>
+<% } %>

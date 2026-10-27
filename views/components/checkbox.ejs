@@ -1,0 +1,32 @@
+<%#
+  views/components/checkbox.ejs
+  shadcn/ui Checkbox port in vanilla EJS.
+  Props:
+    - id: string (optional)
+    - name: string (optional)
+    - checked: boolean (default false)
+    - disabled: boolean (default false)
+    - label: string (optional)
+    - className: string (optional)
+%>
+<%
+  const cbId = typeof id !== 'undefined' ? id : 'cb_' + Math.random().toString(36).slice(2, 8);
+  const cbName = typeof name !== 'undefined' ? `name="${name}"` : '';
+  const isChecked = typeof checked !== 'undefined' && checked;
+  const isDis = typeof disabled !== 'undefined' && disabled;
+  const labelText = typeof label !== 'undefined' ? label : '';
+  const extra = typeof className !== 'undefined' ? className : '';
+%>
+<label for="<%= cbId %>" class="inline-flex items-center gap-2 cursor-pointer select-none <%= isDis ? 'opacity-50 cursor-not-allowed' : '' %> <%= extra %>">
+  <div class="relative flex items-center justify-center">
+    <input type="checkbox" id="<%= cbId %>" <%- cbName %> class="peer sr-only" <%= isChecked ? 'checked' : '' %> <%= isDis ? 'disabled' : '' %> />
+    <div class="h-4 w-4 shrink-0 rounded-sm border border-primary shadow-subtle transition-colors peer-focus-visible:outline-none peer-focus-visible:ring-1 peer-focus-visible:ring-ring peer-checked:bg-primary peer-checked:text-primary-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-50 flex items-center justify-center">
+      <svg class="lucide lucide-sm hidden peer-checked:block text-primary-foreground pointer-events-none" aria-hidden="true">
+        <use href="/icons/sprite.svg#check"></use>
+      </svg>
+    </div>
+  </div>
+  <% if (labelText) { %>
+    <span class="text-sm font-medium leading-none"><%= labelText %></span>
+  <% } %>
+</label>

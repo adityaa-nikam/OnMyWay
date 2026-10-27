@@ -1,0 +1,28 @@
+<%#
+  views/components/textarea.ejs
+  shadcn/ui Textarea port in vanilla EJS.
+  Props:
+    - id: string (optional)
+    - name: string (optional)
+    - placeholder: string (optional)
+    - rows: number (default 3)
+    - required: boolean (default false)
+    - disabled: boolean (default false)
+    - value: string (optional)
+    - className: string (optional)
+    - attrs: string (optional raw attributes)
+%>
+<%
+  const taId = typeof id !== 'undefined' ? `id="${id}"` : '';
+  const taName = typeof name !== 'undefined' ? `name="${name}"` : '';
+  const taPlaceholder = typeof placeholder !== 'undefined' ? `placeholder="${placeholder}"` : '';
+  const taRows = typeof rows !== 'undefined' ? rows : 3;
+  const isReq = typeof required !== 'undefined' && required ? 'required' : '';
+  const isDis = typeof disabled !== 'undefined' && disabled ? 'disabled' : '';
+  const val = typeof value !== 'undefined' ? value : '';
+  const extra = typeof className !== 'undefined' ? className : '';
+  const rawAttrs = typeof attrs !== 'undefined' ? attrs : '';
+
+  const classes = "flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-subtle placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 " + extra;
+%>
+<textarea <%- taId %> <%- taName %> rows="<%= taRows %>" <%- taPlaceholder %> class="<%= classes %>" <%= isReq %> <%= isDis %> <%- rawAttrs %>><%= val %></textarea>

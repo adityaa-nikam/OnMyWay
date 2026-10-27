@@ -1,0 +1,15 @@
+<%#
+  views/components/separator.ejs
+  shadcn/ui Separator divider port.
+  Props:
+    - orientation: "horizontal" | "vertical" (default "horizontal")
+    - className: string (optional)
+%>
+<%
+  const orient = typeof orientation !== 'undefined' ? orientation : 'horizontal';
+  const extra = typeof className !== 'undefined' ? className : '';
+  const classes = orient === 'horizontal'
+    ? "shrink-0 bg-border h-[1px] w-full " + extra
+    : "shrink-0 bg-border h-full w-[1px] " + extra;
+%>
+<div role="separator" aria-orientation="<%= orient %>" class="<%= classes %>"></div>
