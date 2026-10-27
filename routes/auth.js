@@ -201,8 +201,8 @@ router.post('/auth/verify', (req, res) => {
   res.json({ success: true, redirect: redirectTarget, user });
 });
 
-// Logout
-router.post('/auth/logout', (req, res) => {
+// Logout (handles both GET and POST)
+router.all('/auth/logout', (req, res) => {
   const sessionToken = req.cookies?.[COOKIE_NAME] || req.cookies?.['rt_session'];
   if (sessionToken) {
     repo.deleteSession(hashToken(sessionToken));
@@ -210,7 +210,7 @@ router.post('/auth/logout', (req, res) => {
   res.clearCookie(COOKIE_NAME);
   res.clearCookie('rt_session');
 
-  if (req.accepts('html') && !req.xhr) {
+  if (req.accepts('html') && !req.xhr && !req.is('json')) {
     return res.redirect('/');
   }
   res.json({ success: true });

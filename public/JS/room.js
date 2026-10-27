@@ -102,37 +102,55 @@ if (omwConfig && omwConfig.isPersistentGroup && omwConfig.groupId) {
 // --------------------------------------------------------------------------
 const map = L.map("map", { zoomControl: true }).setView([20, 0], 2);
 
-// Desaturated Light Map Layer (Carto Positron / OpenStreetMap)
-const cartoLightTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-  maxZoom: 20,
-  subdomains: "abcd",
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-});
+// Map Layers: High-Precision Vector Roadmap, Satellite Hybrid, Clean Monochrome, and OpenStreetMap
+const mapLayers = {
+  precise: L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+    maxZoom: 21,
+    subdomains: ["0", "1", "2", "3"],
+    attribution: '&copy; Google Maps &copy; OpenStreetMap contributors'
+  }),
+  satellite: L.tileLayer("https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
+    maxZoom: 21,
+    subdomains: ["0", "1", "2", "3"],
+    attribution: '&copy; Google Maps Satellite Imagery'
+  }),
+  clean: L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+    maxZoom: 21,
+    subdomains: ["0", "1", "2", "3"],
+    attribution: '&copy; Google Maps &copy; OpenStreetMap contributors',
+    className: "leaflet-desaturated-tiles"
+  }),
+  osm: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  })
+};
 
-// Desaturated OpenStreetMap fallback layer with CSS filter
-const desaturatedOsmTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19,
-  attribution: "© OpenStreetMap contributors",
-  className: "leaflet-desaturated-tiles"
-});
+const mapStyleKeys = ["precise", "satellite", "clean", "osm"];
+const mapStyleLabels = {
+  precise: "Precise Map",
+  satellite: "Satellite",
+  clean: "Clean Mono",
+  osm: "OpenStreetMap"
+};
 
-let isCartoLight = true;
-cartoLightTileLayer.addTo(map);
+let currentStyleIdx = 0; // Starts with high-precision map
+let currentTileLayer = mapLayers.precise;
+currentTileLayer.addTo(map);
 
-function toggleMapTiles() {
-  if (isCartoLight) {
-    map.removeLayer(cartoLightTileLayer);
-    desaturatedOsmTileLayer.addTo(map);
-    isCartoLight = false;
-    if (btnTileToggle) btnTileToggle.textContent = "OSM Style";
-  } else {
-    map.removeLayer(desaturatedOsmTileLayer);
-    cartoLightTileLayer.addTo(map);
-    isCartoLight = true;
-    if (btnTileToggle) btnTileToggle.textContent = "Clean Style";
+function cycleMapStyle() {
+  map.removeLayer(currentTileLayer);
+  currentStyleIdx = (currentStyleIdx + 1) % mapStyleKeys.length;
+  const key = mapStyleKeys[currentStyleIdx];
+  currentTileLayer = mapLayers[key];
+  currentTileLayer.addTo(map);
+
+  if (btnTileToggle) {
+    btnTileToggle.textContent = mapStyleLabels[key];
   }
 }
-window.toggleMapTiles = toggleMapTiles;
+window.cycleMapStyle = cycleMapStyle;
+window.toggleMapTiles = cycleMapStyle;
 
 // Set default mobile tab
 if (workspace) {

@@ -381,11 +381,11 @@
         attributionControl: false
       }).setView([MEETUP_DATA.destLat, MEETUP_DATA.destLng], 14);
 
-      // Light Desaturated Carto Positron Tiles
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 20,
-        subdomains: 'abcd',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      // High-Precision Map Layer (Zoom up to 21)
+      L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 21,
+        subdomains: ['0', '1', '2', '3'],
+        attribution: '&copy; Google Maps &copy; OpenStreetMap contributors'
       }).addTo(map);
 
       // Destination Marker (Monochrome Target)

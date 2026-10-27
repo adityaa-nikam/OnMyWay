@@ -97,7 +97,7 @@ The component library contains 23 reusable EJS partials ported from shadcn anato
 3. **Zero CDNs**: All fonts, icons, and styles are self-hosted within the `/public` directory.
 
 ### Leaflet Map Theming
-1. **Tiles**: Use desaturated Carto Positron (`https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png`) or OpenStreetMap with `.leaflet-desaturated-tiles { filter: grayscale(100%) brightness(102%) contrast(98%); }`. Keep provider attributions visible.
+1. **Tiles**: High-Precision Vector Roadmap (`https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}`), Satellite Hybrid (`lyrs=y`), Clean Monochrome (`.leaflet-desaturated-tiles`), and OpenStreetMap. Carto is deprecated due to API key watermarks. Keep provider attributions visible.
 2. **Markers**:
    - **Live Sharing**: Solid black dot with a white ring and soft outward pulse.
    - **Hover / Selected**: Shows initials avatar pill.

@@ -19,12 +19,12 @@ if (!roomId || !token) {
   window.location.href = "/";
 }
 
-// Map Initialization
+// Map Initialization (High-Precision Vector Roadmap)
 const map = L.map("map");
-L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-  maxZoom: 20,
-  subdomains: "abcd",
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+  maxZoom: 21,
+  subdomains: ["0", "1", "2", "3"],
+  attribution: '&copy; Google Maps &copy; OpenStreetMap contributors'
 }).addTo(map);
 
 // Default fallback world view

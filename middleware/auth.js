@@ -75,8 +75,8 @@ function verifyCsrf(req, res, next) {
     return next();
   }
 
-  // Exempt auth magic link submission and verify POST
-  if (req.path === '/auth/magic-link' || req.path === '/auth/verify' || req.path.startsWith('/api/rooms')) {
+  // Exempt auth magic link submission, verify POST, and logout
+  if (req.path === '/auth/magic-link' || req.path === '/auth/verify' || req.path === '/auth/logout' || req.path.startsWith('/api/rooms')) {
     return next();
   }
 
