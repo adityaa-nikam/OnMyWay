@@ -4,6 +4,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "dev": "node app.js",
     "test": "node test-rooms-security.js && node test-milestone1.js && node test-timeboxed-safety.js && node test-meetups.js",
     "test:security": "node test-rooms-security.js",
     "test:milestone1": "node test-milestone1.js",
