@@ -15,6 +15,10 @@ let dbInstance = null;
 function getDb(customPath = null) {
   if (!dbInstance || customPath) {
     const dbPath = customPath || process.env.DATABASE_PATH || path.join(DATA_DIR, 'onmyway.db');
+    const parentDir = path.dirname(dbPath);
+    if (!fs.existsSync(parentDir)) {
+      fs.mkdirSync(parentDir, { recursive: true });
+    }
     const db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');

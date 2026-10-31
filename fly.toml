@@ -8,6 +8,11 @@ primary_region = 'sin'
 
 [build]
 
+[env]
+  PORT = "3000"
+  DATABASE_PATH = "/data/onmyway.db"
+  NODE_ENV = "production"
+
 [[mounts]]
   source = 'data'
   destination = '/data'
