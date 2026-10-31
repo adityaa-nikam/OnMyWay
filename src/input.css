@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -39,12 +41,18 @@
     border-color: hsl(var(--border));
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "calt", "liga";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.011em;
   }
 }
 
@@ -84,10 +92,10 @@
   }
 }
 
-/* Custom Minimal Scrollbar */
+/* Custom Sleek Monochrome Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -95,9 +103,122 @@
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
   border-radius: 9999px;
+  transition: background 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.4);
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* ==========================================================================
+   Sleek Monochrome Utilities & Micro-Interactions
+   ========================================================================== */
+
+/* Subtle Technical Dot Grid for Hero & Backdrops */
+.bg-grid-pattern {
+  background-size: 28px 28px;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.07) 1px, transparent 1px);
+}
+
+.bg-grid-mask {
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 10%, #000 50%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 10%, #000 50%, transparent 100%);
+}
+
+/* Sleek Monochrome Cards with Micro-Hover Lift */
+.sleek-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 4px 12px 0 rgba(0, 0, 0, 0.02);
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sleek-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 0, 0, 0.22);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+}
+
+/* Tactile Button Utilities */
+.sleek-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-weight: 500;
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sleek-btn-primary:hover {
+  background-color: #27272a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.18), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+}
+
+.sleek-btn-primary:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.sleek-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  font-weight: 500;
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sleek-btn-secondary:hover {
+  background-color: hsl(var(--secondary));
+  border-color: rgba(0, 0, 0, 0.24);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px -1px rgba(0, 0, 0, 0.06);
+}
+
+.sleek-btn-secondary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Native Dialog Smooth Entry and Frosted Backdrop */
+dialog[open] {
+  animation: dialog-appear 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: dialog-backdrop 0.2s ease-out forwards;
+}
+
+@keyframes dialog-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dialog-backdrop {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 /* Leaflet Map Neutral Monochrome Theme Overrides */
@@ -133,7 +254,7 @@
   color: hsl(var(--card-foreground)) !important;
   border: 1px solid hsl(var(--border)) !important;
   border-radius: var(--radius) !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1) !important;
   padding: 0 !important;
 }
 

@@ -50,13 +50,16 @@ body, html {
    ========================================================================== */
 .app-header {
   height: var(--header-height);
-  background-color: hsl(var(--background));
-  border-bottom: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background) / 85%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid hsl(var(--border) / 80%);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
   z-index: 100;
+  transition: background-color 0.2s ease;
 }
 
 .header-left, .header-right {
@@ -74,17 +77,27 @@ body, html {
   font-weight: 600;
   font-size: 0.95rem;
   letter-spacing: -0.015em;
+  transition: opacity 0.15s ease;
+}
+
+.brand-link:hover {
+  opacity: 0.85;
 }
 
 .brand-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius);
   border: 1px solid hsl(var(--border));
   background-color: hsl(var(--muted));
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-link:hover .brand-icon {
+  transform: scale(1.06);
 }
 
 .room-pill {
@@ -96,6 +109,7 @@ body, html {
   border-radius: var(--radius);
   border: 1px solid hsl(var(--border));
   font-size: 0.78rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .room-label {
@@ -116,7 +130,7 @@ body, html {
   background: hsl(var(--background));
   border: 1px solid hsl(var(--border));
   color: hsl(var(--foreground));
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: calc(var(--radius) - 2px);
   font-size: 0.72rem;
   font-weight: 500;
@@ -124,10 +138,18 @@ body, html {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: background-color 0.15s, border-color 0.15s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .icon-btn:hover {
   background: hsl(var(--accent));
+  border-color: rgba(0, 0, 0, 0.22);
+  transform: translateY(-1px);
+}
+.icon-btn:active {
+  transform: translateY(0) scale(0.97);
 }
 
 .status-pill {
