@@ -1,4 +1,12 @@
 // Express + Socket.IO server with Room Isolation, Identity Protection & Rate Limiting
+try {
+  if (typeof process.loadEnvFile === 'function') {
+    process.loadEnvFile();
+  }
+} catch (e) {
+  // .env is optional
+}
+
 const path = require('path');
 const express = require('express');
 const http = require('http');
@@ -57,6 +65,11 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // ---------- HTTP ROUTES ----------
+
+// Health check endpoint for uptime monitors (e.g., UptimeRobot, Render)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: Date.now(), uptime: Math.floor(process.uptime()) });
+});
 
 // Home page
 app.get('/', (req, res) => {
@@ -656,7 +669,7 @@ io.on('connection', (socket) => {
       locationSharingService.checkArrival(socket.data.userId, latitude, longitude);
     }
 
-    const locData = roomManager.updateLocation(roomId, socket.id, latitude, longitude, isGhost);
+    const locData = roomManager.updateLocation(roomId, socket.id, latitude, longitude, isGhost, socket.data.isVisible === false);
     if (!locData) {
       const err = { message: 'Failed to update location.', code: 'STATE_ERROR' };
       socket.emit('error-notice', err);
@@ -707,6 +720,45 @@ io.on('connection', (socket) => {
     if (typeof callback === 'function') {
       callback({ success: true, updatedAt: locData.updatedAt });
     }
+  });
+
+  // Client visibility change (honest platform background tracking)
+  socket.on('client-visibility', (payload, callback) => {
+    const roomId = socket.data.roomId;
+    if (!checkSocketAuthorized(socket)) return;
+
+    const isVisible = Boolean(payload && payload.isVisible);
+    socket.data.isVisible = isVisible;
+    const loc = roomManager.setMemberVisibility(roomId, socket.id, isVisible);
+    if (loc) {
+      io.to(roomId).emit('location-visibility-updated', {
+        id: socket.id,
+        name: socket.data.name,
+        isVisible,
+        isPaused: Boolean(loc.isPaused),
+        updatedAt: loc.updatedAt
+      });
+      io.to(roomId).emit('participants-updated', roomManager.getParticipantList(roomId));
+    }
+    if (typeof callback === 'function') callback({ success: true, isVisible });
+  });
+
+  // Client marks location paused / staleness ping
+  socket.on('mark-location-paused', (payload, callback) => {
+    const roomId = socket.data.roomId;
+    if (!checkSocketAuthorized(socket)) return;
+
+    const loc = roomManager.markLocationPaused(roomId, socket.id, true);
+    if (loc) {
+      io.to(roomId).emit('location-paused', {
+        id: socket.id,
+        name: socket.data.name,
+        lastSeenAt: loc.updatedAt,
+        inBackground: true
+      });
+      io.to(roomId).emit('participants-updated', roomManager.getParticipantList(roomId));
+    }
+    if (typeof callback === 'function') callback({ success: true });
   });
 
   // Set shared rendezvous / meeting point
@@ -840,6 +892,18 @@ io.on('connection', (socket) => {
           isSystem: true
         });
       }
+    } else if (roomId) {
+      io.to(roomId).emit('sos-updated', {
+        id: sosId || socket.id,
+        responders: [{ name: socket.data.name }]
+      });
+      io.to(roomId).emit('receive', {
+        id: 'system',
+        name: 'System',
+        message: `🛡️ ${socket.data.name} is on it!`,
+        timestamp: Date.now(),
+        isSystem: true
+      });
     }
     if (typeof callback === 'function') callback({ success: true });
   });
@@ -863,6 +927,18 @@ io.on('connection', (socket) => {
           isSystem: true
         });
       }
+    } else if (roomId) {
+      io.to(roomId).emit('sos-cancelled', {
+        sosId: sosId || socket.id,
+        cancelledBy: socket.data.name
+      });
+      io.to(roomId).emit('receive', {
+        id: 'system',
+        name: 'System',
+        message: `✅ False alarm: SOS beacon cancelled by ${socket.data.name}.`,
+        timestamp: Date.now(),
+        isSystem: true
+      });
     }
     if (typeof callback === 'function') callback({ success: true });
   });

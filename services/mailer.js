@@ -1,19 +1,38 @@
 const nodemailer = require('nodemailer');
 
+try {
+  if (typeof process.loadEnvFile === 'function') {
+    process.loadEnvFile();
+  }
+} catch (e) {
+  // .env is optional
+}
+
 let transporter = null;
 
 function getTransporter() {
   if (!transporter) {
-    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587', 10),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
-      });
+    const isGmail = process.env.SMTP_SERVICE === 'gmail' || process.env.SMTP_HOST === 'smtp.gmail.com';
+    if (process.env.SMTP_USER && (process.env.SMTP_HOST || process.env.SMTP_SERVICE)) {
+      if (isGmail) {
+        transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+          }
+        });
+      } else {
+        transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || '587', 10),
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+          }
+        });
+      }
     } else {
       // Development console transporter: logs magic link directly to terminal
       transporter = {
@@ -31,10 +50,23 @@ function getTransporter() {
   return transporter;
 }
 
+function resetTransporter() {
+  transporter = null;
+}
+
+async function verifySmtp() {
+  const mail = getTransporter();
+  if (typeof mail.verify === 'function') {
+    return mail.verify();
+  }
+  return { mock: true };
+}
+
 async function sendMagicLinkEmail({ to, magicLinkUrl }) {
   const mail = getTransporter();
+  const fromAddress = process.env.SMTP_FROM || process.env.MAIL_FROM || (process.env.SMTP_USER ? `"OnMyWay (OMW)" <${process.env.SMTP_USER}>` : '"OnMyWay (OMW)" <noreply@onmyway.local>');
   const mailOptions = {
-    from: process.env.MAIL_FROM || '"OnMyWay (OMW)" <noreply@onmyway.local>',
+    from: fromAddress,
     to,
     subject: 'Sign in to OnMyWay (OMW) — Share until you arrive',
     text: `Hello!\n\nClick the link below to sign in to OnMyWay:\n\n${magicLinkUrl}\n\nThis single-use link expires in 15 minutes.\nIf you did not request this email, you can safely ignore it.`,
@@ -54,4 +86,4 @@ async function sendMagicLinkEmail({ to, magicLinkUrl }) {
   return mail.sendMail(mailOptions);
 }
 
-module.exports = { sendMagicLinkEmail };
+module.exports = { sendMagicLinkEmail, getTransporter, verifySmtp, resetTransporter };

@@ -46,20 +46,18 @@ router.post('/auth/magic-link', async (req, res) => {
 
   repo.createAuthToken({ tokenHash, email: cleanEmail, expiresAt });
 
-  const host = req.get('host') || 'localhost:3000';
-  const protocol = req.protocol || 'http';
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = process.env.APP_URL || `${req.protocol || 'http'}://${req.get('host') || 'localhost:3000'}`;
   const verifyUrl = `${baseUrl}/auth/verify?token=${rawToken}${returnUrl ? `&returnUrl=${encodeURIComponent(returnUrl)}` : ''}`;
 
   try {
     await sendMagicLinkEmail({ to: cleanEmail, magicLinkUrl: verifyUrl });
   } catch (err) {
     console.error('Failed to send magic link email:', err);
-    return res.status(500).json({ success: false, error: 'Unable to deliver sign-in email. Please try again.' });
+    return res.status(500).json({ success: false, error: 'Unable to deliver sign-in email. Please check your SMTP settings and try again.' });
   }
 
   if (req.accepts('html') && !req.xhr) {
-    const isDev = !process.env.SMTP_HOST;
+    const isDev = !(process.env.SMTP_USER && (process.env.SMTP_HOST || process.env.SMTP_SERVICE));
     const devParam = isDev ? `&devLink=${encodeURIComponent(verifyUrl)}` : '';
     return res.redirect(`/login?sent=true&email=${encodeURIComponent(cleanEmail)}${devParam}`);
   }

@@ -49,7 +49,7 @@ class RoomManager {
   /**
    * Update or register an active location for a participant in a room
    */
-  updateLocation(roomId, socketId, latitude, longitude, isGhost = false) {
+  updateLocation(roomId, socketId, latitude, longitude, isGhost = false, isBackground = false) {
     const room = this.rooms.get(roomId);
     if (!room) return null;
 
@@ -63,11 +63,58 @@ class RoomManager {
       latitude,
       longitude,
       updatedAt,
-      isGhost: Boolean(isGhost)
+      isGhost: Boolean(isGhost),
+      isBackground: Boolean(isBackground),
+      isPaused: false
     };
 
     room.locations.set(socketId, locData);
     return locData;
+  }
+
+  /**
+   * Update member visibility state (foreground/background)
+   */
+  setMemberVisibility(roomId, socketId, isVisible) {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+
+    const loc = room.locations.get(socketId);
+    if (loc) {
+      loc.isBackground = !isVisible;
+      if (!isVisible) {
+        loc.hiddenAt = Date.now();
+      } else {
+        loc.isPaused = false;
+        loc.hiddenAt = null;
+      }
+      return loc;
+    }
+    return null;
+  }
+
+  /**
+   * Get location object for a socket
+   */
+  getLocation(roomId, socketId) {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    return room.locations.get(socketId) || null;
+  }
+
+  /**
+   * Mark a participant's location as paused (honest state after staleness window)
+   */
+  markLocationPaused(roomId, socketId, inBackground = true) {
+    const room = this.rooms.get(roomId);
+    if (!room) return null;
+    const loc = room.locations.get(socketId);
+    if (loc) {
+      loc.isPaused = true;
+      loc.isBackground = Boolean(inBackground);
+      return loc;
+    }
+    return null;
   }
 
   /**
@@ -138,11 +185,15 @@ class RoomManager {
     if (!room) return [];
     const list = [];
     for (const [socketId, member] of room.members.entries()) {
+      const loc = room.locations.get(socketId);
       list.push({
         id: socketId,
         name: member.name,
         joinedAt: member.joinedAt,
-        isSharingLocation: room.locations.has(socketId)
+        isSharingLocation: Boolean(loc),
+        isPaused: Boolean(loc && loc.isPaused),
+        isBackground: Boolean(loc && loc.isBackground),
+        lastSeenAt: loc ? loc.updatedAt : null
       });
     }
     return list;
