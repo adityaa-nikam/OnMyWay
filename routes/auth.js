@@ -53,7 +53,7 @@ router.post('/auth/magic-link', async (req, res) => {
     await sendMagicLinkEmail({ to: cleanEmail, magicLinkUrl: verifyUrl });
   } catch (err) {
     console.error('Failed to send magic link email:', err);
-    return res.status(500).json({ success: false, error: 'Unable to deliver sign-in email. Please check your SMTP settings and try again.' });
+    return res.status(500).json({ success: false, error: `Unable to deliver sign-in email: ${err.message}` });
   }
 
   if (req.accepts('html') && !req.xhr) {
