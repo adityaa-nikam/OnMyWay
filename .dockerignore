@@ -1,0 +1,17 @@
+node_modules/
+.env
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.DS_Store
+Thumbs.db
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+
+# Archives & Temporary Packages
+*.zip
+*.tar.gz
