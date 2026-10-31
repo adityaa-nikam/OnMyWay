@@ -1,8 +1,8 @@
 const http = require('http');
 const crypto = require('crypto');
 const { io: ioClient } = require('socket.io-client');
-const { app, server, repo } = require('./app');
-const { hashToken, COOKIE_NAME } = require('./middleware/auth');
+const { app, server, repo } = require('../app');
+const { hashToken, COOKIE_NAME } = require('../middleware/auth');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

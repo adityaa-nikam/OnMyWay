@@ -25,10 +25,10 @@ OnMyWay (OMW) is a hardened, privacy-first coordination platform built for persi
 ## 🧪 Automated Test Suite & Exact Test Counts
 
 ### Test Count Clarification
-- **`node test-rooms-security.js`:** **52 assertions passed** (13 test suites).
+- **`node tests/test-rooms-security.js`:** **52 assertions passed** (13 test suites).
   > *Note on 45 vs 52 count:* An earlier revision of the README listed 45 checks. When Sections 11–13 were subsequently introduced (Unified Workspace, Shared Rendezvous Point, Ghost Mode & Emergency SOS), 7 new checks were added, bringing the verified runtime assertion total to **52**.
-- **`node test-milestone1.js`:** **28 assertions passed** (6 test suites).
-- **Total Automated Test Suite:** **80 checks passed**, 0 failures.
+- **`node tests/test-milestone1.js`:** **28 assertions passed** (6 test suites).
+- **Total Automated Test Suite:** **130 checks passed**, 0 failures.
 
 ### Running Automated Tests
 ```bash

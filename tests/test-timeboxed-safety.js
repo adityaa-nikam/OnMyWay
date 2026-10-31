@@ -1,8 +1,8 @@
 const http = require('http');
 const crypto = require('crypto');
 const { io: ioClient } = require('socket.io-client');
-const { app, server, repo, locationSharingService } = require('./app');
-const { hashToken } = require('./middleware/auth');
+const { app, server, repo, locationSharingService } = require('../app');
+const { hashToken } = require('../middleware/auth');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

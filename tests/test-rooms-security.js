@@ -2,7 +2,7 @@ const { io: ioClient } = require('socket.io-client');
 const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
-const { RoomManager, RateLimiter, validateCoordinates, validateMessage } = require('./roomManager');
+const { RoomManager, RateLimiter, validateCoordinates, validateMessage } = require('../roomManager');
 
 // Helper to wait for ms
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -11,7 +11,7 @@ async function runTests() {
   console.log('🧪 Starting Backend Security & Room Isolation Test Suite...\n');
 
   // Set up test server on dynamic port
-  const { app, server, roomManager } = require('./app');
+  const { app, server, roomManager } = require('../app');
   const TEST_PORT = 3456;
   
   await new Promise((resolve) => server.listen(TEST_PORT, resolve));

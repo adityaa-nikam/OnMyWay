@@ -6,7 +6,7 @@ const fs = require('fs');
 const { io: ClientIO } = require('socket.io-client');
 
 // Use a clean test database
-const TEST_DB_FILE = path.join(__dirname, 'data', 'test_meetups.db');
+const TEST_DB_FILE = path.join(__dirname, '..', 'data', 'test_meetups.db');
 if (fs.existsSync(TEST_DB_FILE)) {
   fs.unlinkSync(TEST_DB_FILE);
 }
@@ -14,7 +14,7 @@ process.env.DB_PATH = TEST_DB_FILE;
 process.env.NODE_ENV = 'test';
 delete process.env.OSRM_BASE_URL; // Default to straight-line fallback
 
-const { app, server, io, roomManager, repo, locationSharingService, routingService } = require('./app');
+const { app, server, io, roomManager, repo, locationSharingService, routingService } = require('../app');
 
 const TEST_PORT = 3459;
 const BASE_URL = `http://localhost:${TEST_PORT}`;
